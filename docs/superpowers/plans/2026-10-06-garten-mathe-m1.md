@@ -18,6 +18,7 @@
 - Round = 1 task type × 10 tasks (`ROUND_SIZE = 10`).
 - "First try" = correct on first entry **and** no help used. Plant: <50 % → stage 2, 50–79 % → 3, 80–99 % → 4, exactly 100 % → Prachtpflanze (stage 5 + `pracht: true` + exactly one gold node).
 - Plants never shrink; watering (+1 stage) caps at 5 and never creates a Prachtpflanze.
+- A watering round grows only the watered plant and plants **no** new plant; every normal round plants exactly one new plant. Both count toward the daily limit.
 - Level per task type 1–4: up at ≥ 85 % of last 10 first-try, down at < 60 %; history resets on change.
 - Daily round limit default 3 (`settings.roundsPerDay`).
 - Palette (exact hex): green `#4E9A5B`, pink `#F08C9A`, yellow `#F5B82E`, blue `#2F78C4`, redOrange `#E2522B`, lilac `#9B87C4`, cream `#EADCB4`, navy `#23449A`, olive `#93A62B`, gold `#C9971E` + shine `#F3D57A`. Flat shapes, no gradients, no blurred shadows (hard 0-blur offsets on buttons are allowed).
@@ -257,7 +258,7 @@ Create `docs/DECISIONS.md`:
 <!-- one line each: YYYY-MM-DD – decision – why. Append only. -->
 2026-10-06 – Vite + Svelte 5 + TypeScript PWA, no backend – small bundle, offline-capable, free GitHub Pages hosting
 2026-10-06 – Dev server over HTTPS (plugin-basic-ssl) – motion sensors require a secure context on the phone
-2026-10-06 – Every round plants a new plant; a watering round additionally grows the watered plant by one stage – keeps "1 Runde = 1 Pflanze" and makes Gießen rewarding
+2026-10-06 – A watering round only grows the watered plant (+1 stage, max 5), no new plant – "Gießen" should mean caring for that plant; normal rounds keep "1 Runde = 1 Pflanze"
 2026-10-06 – Tap-to-place plates instead of drag (fillTen level 1) – more reliable for small fingers
 2026-10-06 – "Schütteln" button always visible next to real shaking – sensor availability can't be detected before the first event
 ```
@@ -1255,7 +1256,7 @@ git commit -m "feat: add task generators for decompose, fill-ten and bridge-ten"
 - Consumes: `TASK_TYPES` (registry), `focusItems`, `pickWeighted`, `BOX_WEIGHT`, `updateItem` (leitner), `pushHistory`, `nextLevel` (levels), `createRng`, types.
 - Produces:
   - `ROUND_SIZE = 10`; `class Round { taskType; level; seed; wateringPlantId; results: TaskResult[]; current: AnyTask; get done(): boolean; get index(): number; record(r: TaskResult): void }`, constructor `new Round({ taskType, level, items, seed, wateringPlantId? })`
-  - `RoundOutcome { state: AppState; plant: PlantRecord; watered: PlantRecord | null; levelDelta: -1 | 0 | 1; score: { firstTry: number; total: number } }`
+  - `RoundOutcome { state: AppState; plant: PlantRecord; watered: boolean; levelDelta: -1 | 0 | 1; score: { firstTry: number; total: number } }` – `plant` is the new plant, or after a watering round the grown watered plant (no new plant is planted then)
   - `plantOutcome(firstTry: number, total: number): { stage: PlantStage; pracht: boolean }`
   - `water(p: PlantRecord): PlantRecord`
   - `finishRound(state: AppState, round: FinishedRound, date: string, plantId: string): RoundOutcome` with `FinishedRound = { taskType; seed; wateringPlantId: string | null; results: readonly TaskResult[] }`
@@ -1389,13 +1390,27 @@ describe('finishRound', () => {
     expect(o.state.levels.fillTen).toBe(2);
     expect(o.state.history.fillTen).toEqual([]);
   });
-  it('grows the watered plant in addition to the new one', () => {
+  it('a watering round only grows the watered plant, no new plant', () => {
     const s = defaultState();
     s.plants.push(plant({ id: 'old', stage: 2 }));
     const o = finishRound(s, round(results(3), 'old'), '2026-10-06', 'new');
-    expect(o.state.plants.find((p) => p.id === 'old')!.stage).toBe(3);
-    expect(o.watered?.id).toBe('old');
-    expect(o.state.plants).toHaveLength(2);
+    expect(o.state.plants).toHaveLength(1);
+    expect(o.state.plants[0]).toMatchObject({ id: 'old', stage: 3 });
+    expect(o.watered).toBe(true);
+    expect(o.plant).toMatchObject({ id: 'old', stage: 3 });
+    expect(o.state.rounds).toHaveLength(1);
+  });
+  it('a perfect watering round still never makes a Prachtpflanze', () => {
+    const s = defaultState();
+    s.plants.push(plant({ id: 'old', stage: 4 }));
+    const o = finishRound(s, round(results(10), 'old'), '2026-10-06', 'new');
+    expect(o.plant).toMatchObject({ id: 'old', stage: 5, pracht: false });
+  });
+  it('plants normally when the watered plant no longer exists', () => {
+    const o = finishRound(defaultState(), round(results(6), 'gone'), '2026-10-06', 'new');
+    expect(o.watered).toBe(false);
+    expect(o.state.plants).toHaveLength(1);
+    expect(o.plant.id).toBe('new');
   });
   it('does not mutate the input state', () => {
     const s = defaultState();
@@ -1536,8 +1551,9 @@ export interface FinishedRound {
 
 export interface RoundOutcome {
   state: AppState;
+  /** The newly planted plant, or after a watering round the grown watered plant. */
   plant: PlantRecord;
-  watered: PlantRecord | null;
+  watered: boolean;
   levelDelta: -1 | 0 | 1;
   score: { firstTry: number; total: number };
 }
@@ -1571,15 +1587,18 @@ export function finishRound(state: AppState, round: FinishedRound, date: string,
   const history = pushHistory(state.history[type], flags);
   const lvl = nextLevel(state.levels[type], history);
 
-  const { stage, pracht } = plantOutcome(firstTry, total);
-  const plant: PlantRecord = { id: plantId, seed: round.seed, family: TASK_TYPES[type].family, taskType: type, stage, pracht, date };
-
-  let watered: PlantRecord | null = null;
-  const plants = state.plants.map((p) => {
-    if (p.id !== round.wateringPlantId) return p;
-    watered = water(p);
-    return watered;
-  });
+  // A watering round grows the chosen plant instead of planting a new one.
+  const target = state.plants.find((p) => p.id === round.wateringPlantId);
+  let plant: PlantRecord;
+  let plants: PlantRecord[];
+  if (target) {
+    plant = water(target);
+    plants = state.plants.map((p) => (p.id === target.id ? plant : p));
+  } else {
+    const { stage, pracht } = plantOutcome(firstTry, total);
+    plant = { id: plantId, seed: round.seed, family: TASK_TYPES[type].family, taskType: type, stage, pracht, date };
+    plants = [...state.plants, plant];
+  }
 
   return {
     state: {
@@ -1588,12 +1607,12 @@ export function finishRound(state: AppState, round: FinishedRound, date: string,
       // A fresh history after a level change keeps the next decision about the new level only.
       history: { ...state.history, [type]: lvl.delta === 0 ? history : [] },
       levels: { ...state.levels, [type]: lvl.level },
-      plants: [...plants, plant],
+      plants,
       rounds: [...state.rounds, { date, taskType: type, firstTry, total, ms: round.results.reduce((s, r) => s + r.ms, 0) }],
       lastTaskType: type,
     },
     plant,
-    watered,
+    watered: target !== undefined,
     levelDelta: lvl.delta,
     score: { firstTry, total },
   };
@@ -3173,13 +3192,17 @@ Answer flow (TaskShell, all task types):
 <Background />
 <div class="end">
   <div class="stage" class:pracht={outcome.plant.pracht}><Bed plant={outcome.plant} sway={false} /></div>
-  <h1>{outcome.plant.pracht ? 'Eine Prachtpflanze!' : 'Deine Pflanze wächst!'}</h1>
+  {#if outcome.watered}
+    <h1>Deine Pflanze ist gewachsen! 💧</h1>
+    <p>Jetzt ist sie auf Stufe {outcome.plant.stage} von 5.</p>
+  {:else}
+    <h1>{outcome.plant.pracht ? 'Eine Prachtpflanze!' : 'Deine Pflanze wächst!'}</h1>
+  {/if}
   <p>
     {outcome.plant.pracht
       ? 'Alle 10 Aufgaben beim ersten Mal richtig – mit goldenem Glanz!'
       : `Du hast 10 Aufgaben geübt. ${outcome.score.firstTry} davon klappten gleich beim ersten Mal.`}
   </p>
-  {#if outcome.watered}<p>Deine gegossene Pflanze ist auch gewachsen! 💧</p>{/if}
   {#if outcome.levelDelta > 0}<p class="level">Du bist eine Stufe weiter! ⭐</p>{/if}
   <button class="big" onclick={onDone}>Zum Garten</button>
 </div>
@@ -3291,7 +3314,7 @@ In the browser pane (mobile 375×812, `https://localhost:5173/`), play with the 
 1. "Weiter: Zahlen zerlegen" → box with plates → tap "oder hier tippen zum Schütteln" → plates split, prompt appears → type the right answer + Enter → praise → next dot turns green.
 2. Type a wrong answer once → "Fast! …" and the hidden plates appear; wrong again → "So geht es:" with `7 = 3 + 4` style text and "Weiter".
 3. Finish 10 tasks → RoundEnd with plant, "Zum Garten" → plant appears in the grid.
-4. Tap the plant → sheet with "💧 Gießen" (if stage < 5) → round of the same type; after it the old plant's stage is one higher (check the sheet).
+4. Tap the plant → sheet with "💧 Gießen" (if stage < 5) → round of the same type; RoundEnd says "Deine Pflanze ist gewachsen! 💧", the garden has no extra plant and the old plant's stage is one higher (check the sheet).
 5. "Bis 10 auffüllen": level 1 lets you tap empty cells; a correct answer shows "6 ❤ 4".
 6. After 3 rounds the footer shows "Dein Garten wächst über Nacht 🌱" (reset via DevTools: `localStorage.clear()` + reload).
 7. Unlock "Über die 10 rechnen" for testing via DevTools: `const s = JSON.parse(localStorage['garten-mathe']); s.levels.decompose = 2; s.levels.fillTen = 2; s.rounds = []; localStorage['garten-mathe'] = JSON.stringify(s); location.reload()` → chip appears; its level 1 shows 3 guided steps with waiting plates with the Zwanzigerfeld filling row 1, then row 2.

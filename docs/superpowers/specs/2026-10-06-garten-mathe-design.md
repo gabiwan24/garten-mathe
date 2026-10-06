@@ -126,6 +126,7 @@ interface TaskType<T> {
 - **Prozentwert:** Anteil der Aufgaben, die **beim ersten Versuch und ohne Hilfe** richtig waren.
 - **100 %** heißt: alle 10 Aufgaben so gelöst.
 - **Gießen:** Eine Pflanze der Stufe 2–4 wächst um eine Stufe, höchstens bis **Stufe 5** (große, offene Blüte). Gießen macht nie eine Prachtpflanze.
+- **Gieß-Runde:** Dabei wächst *nur* die gegossene Pflanze, es entsteht **keine** neue Pflanze. Jede normale Runde pflanzt genau eine neue Pflanze. Beide Arten zählen zum Tageslimit.
 - Pflanzen schrumpfen und welken nie.
 - Es gibt keine zufälligen Gold- oder Überraschungspflanzen.
 
