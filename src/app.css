@@ -1,0 +1,30 @@
+:root {
+  --green: #4e9a5b; --pink: #f08c9a; --yellow: #f5b82e; --blue: #2f78c4; --red-orange: #e2522b;
+  --lilac: #9b87c4; --cream: #eadcb4; --navy: #23449a; --olive: #93a62b;
+  --gold: #c9971e; --gold-shine: #f3d57a;
+  --sky: #e4efea; --meadow: #a9c29a; --soil: #8a5a3c;
+  --ink: #1f2a44; --white: #fffdf7; --slot: #d9cba0; --press: #2f6b3b; --press-light: #c2b48c;
+  color-scheme: light;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--sky); overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body { touch-action: manipulation; user-select: none; }
+#app { min-height: 100dvh; max-width: 480px; margin: 0 auto; padding: 0 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.big {
+  display: block; width: 100%; min-height: 64px; border: 0; border-radius: 20px;
+  background: var(--green); color: var(--white); font-size: 24px; font-weight: 800;
+  box-shadow: 0 4px 0 var(--press);
+}
+.big:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--press); }
+.secondary {
+  display: block; width: 100%; min-height: 52px; border: 0; border-radius: 18px;
+  background: var(--cream); font-size: 20px; font-weight: 800; box-shadow: 0 4px 0 var(--press-light);
+}
+.secondary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--press-light); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
