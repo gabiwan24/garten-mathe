@@ -36,9 +36,10 @@
 
 <TaskShell {task} {praise} ready={!showBox || shaken} {onDone}>
   {#snippet visual({ help })}
-    {#if !showBox && help}
-      <!-- level 4 has no box, so help shows the split directly -->
-      <div class="split">
+    {#if !showBox}
+      <!-- Level 4 has no box: help shows the split directly. It is rendered veiled (hidden but occupying its
+           real height, which is two rows for 6+ plates) so help never moves the keypad. -->
+      <div class="split" class:veiled={!help} aria-hidden={!help} inert={!help}>
         <Plates count={task.left} size={22} />
         <Plates count={task.right} color="b" size={22} highlight />
       </div>
@@ -67,6 +68,7 @@
 
 <style>
   .box { width: 100%; display: grid; gap: 8px; justify-items: center; background: var(--cream); border-radius: 20px; padding: 12px; }
+  .veiled { visibility: hidden; }
   .split { display: flex; gap: 16px; justify-content: center; align-items: center; }
   .hint { margin: 0; text-align: center; font-size: 20px; }
   .halves { display: grid; grid-template-columns: 1fr 6px 1fr; width: 100%; min-height: 110px; align-items: center; }
