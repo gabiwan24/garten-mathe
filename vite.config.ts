@@ -33,5 +33,7 @@ export default defineConfig({
       workbox: { globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'] },
     }),
   ],
+  // Empty inline config stops Vite from searching up for a parent postcss.config.js.
+  css: { postcss: {} },
   server: { host: true },
 });
