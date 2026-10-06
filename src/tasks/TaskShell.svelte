@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onDestroy, type Snippet } from 'svelte';
   import type { TaskResult } from '../lib/types';
   import Keypad from './components/Keypad.svelte';
   import type { AnyTask, ShellState } from './model';
@@ -23,6 +23,10 @@
   let message = $state('');
   let wrongThisStep = 0;
   const started = performance.now();
+  let finishTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // A pending praise timer must not fire after the screen is gone (e.g. round aborted during the 1.2 s praise).
+  onDestroy(() => clearTimeout(finishTimer));
 
   function submit() {
     const expected = task.steps[step].answer;
@@ -36,7 +40,7 @@
       }
       phase = 'praise';
       message = totalWrong === 0 && !usedHelp ? praise[Math.floor(Math.random() * praise.length)] : 'Geschafft!';
-      setTimeout(finish, 1200);
+      finishTimer = setTimeout(finish, 1200);
       return;
     }
     entry = '';
@@ -66,7 +70,8 @@
 
   <div class="visual">{@render visual?.({ step, help, phase })}</div>
 
-  {#if message}<p class="message" class:praise={phase === 'praise'}>{message}</p>{/if}
+  <!-- Always rendered with a fixed height so the keypad never jumps when a message appears. -->
+  <p class="message" class:praise={phase === 'praise'}>{message}</p>
   {#if phase === 'praise' && praiseExtra}<p class="extra">{praiseExtra}</p>{/if}
 
   {#if phase === 'solution'}
@@ -75,7 +80,10 @@
   {:else}
     {#if help && helpText}<p class="help-text">{helpText}</p>{/if}
     <Keypad bind:value={entry} disabled={!ready || phase !== 'answer'} onsubmit={submit} />
-    <button class="secondary help" onclick={askHelp} disabled={!ready || help || phase !== 'answer'}>Hilfe</button>
+    <!-- Hidden during praise: it is disabled then anyway and would push the page below the fold. -->
+    {#if phase === 'answer'}
+      <button class="secondary help" onclick={askHelp} disabled={!ready || help}>Hilfe</button>
+    {/if}
   {/if}
 </div>
 
@@ -84,9 +92,9 @@
   .prompt { margin: 0; font-size: 26px; font-weight: 800; text-align: center; color: var(--navy); }
   .steps { margin: 0; text-align: center; font-size: 15px; }
   .visual { display: grid; justify-items: center; gap: 8px; min-height: 40px; }
-  .message { margin: 0; text-align: center; font-size: 20px; color: var(--navy); }
+  .message { margin: 0; min-height: 34px; line-height: 34px; text-align: center; font-size: 20px; color: var(--navy); }
   .message.praise { font-size: 24px; color: var(--green); }
-  .extra { margin: 0; text-align: center; font-size: 40px; font-weight: 800; color: var(--pink); }
+  .extra { margin: 0; text-align: center; font-size: 32px; line-height: 36px; font-weight: 800; color: var(--pink); }
   .solution { margin: 0; text-align: center; font-size: 34px; font-weight: 800; }
   .help-text { margin: 0; text-align: center; font-size: 18px; background: var(--white); border-radius: 14px; padding: 8px; }
   .help:disabled { opacity: 0.45; }

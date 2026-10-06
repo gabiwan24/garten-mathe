@@ -36,6 +36,13 @@
 
 <TaskShell {task} {praise} ready={!showBox || shaken} {onDone}>
   {#snippet visual({ help })}
+    {#if !showBox && help}
+      <!-- level 4 has no box, so help shows the split directly -->
+      <div class="split">
+        <Plates count={task.left} size={22} />
+        <Plates count={task.right} color="b" size={22} highlight />
+      </div>
+    {/if}
     {#if showBox}
       <div class="box">
         {#if !shaken}
@@ -60,6 +67,7 @@
 
 <style>
   .box { width: 100%; display: grid; gap: 8px; justify-items: center; background: var(--cream); border-radius: 20px; padding: 12px; }
+  .split { display: flex; gap: 16px; justify-content: center; align-items: center; }
   .hint { margin: 0; text-align: center; font-size: 20px; }
   .halves { display: grid; grid-template-columns: 1fr 6px 1fr; width: 100%; min-height: 110px; align-items: center; }
   .half { display: grid; justify-items: center; }

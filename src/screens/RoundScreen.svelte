@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { finishRound, makePlantId, type RoundOutcome } from '../engine/round';
   import { Round, ROUND_SIZE } from '../engine/session';
   import { today } from '../lib/date';
@@ -27,8 +28,12 @@
   let task = $state(round.current);
   let index = $state(0);
   let confirmAbort = $state(false);
+  // Safety net: a late onDone after abort/destroy must never commit state or navigate.
+  let dead = false;
+  onDestroy(() => (dead = true));
 
   function done(result: TaskResult) {
+    if (dead) return;
     round.record(result);
     if (round.done) {
       const outcome = finishRound(snapshot(), round, today(), makePlantId(round.seed));
