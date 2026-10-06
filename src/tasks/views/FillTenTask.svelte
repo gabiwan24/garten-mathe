@@ -30,18 +30,22 @@
 
 <TaskShell {task} {praise} praiseExtra={`${task.filled} ❤ ${task.missing}`} {onDone}>
   {#snippet visual({ help })}
-    {#if task.level === 4 && !help}
-      <!-- symbolic level: digits only -->
-    {:else if task.level === 3 && flashHidden && !help}
-      <div class="covered">?</div>
-    {:else}
-      <Field cells={cellsFor(help)} columns={5} onCellTap={task.level === 1 ? toggle : undefined} />
-      {#if task.level === 1}<p class="hint">Tipp: Du kannst Plättchen in die leeren Felder legen.</p>{/if}
-    {/if}
+    <!-- The field is veiled (hidden but still occupying its space) at the symbolic levels so help
+         never changes the height of the visual area and the keypad below does not jump. -->
+    {@const veiled = (task.level === 4 || (task.level === 3 && flashHidden)) && !help}
+    <div class="stage">
+      <div class="fieldwrap" class:veiled aria-hidden={veiled} inert={veiled}>
+        <Field cells={cellsFor(help)} columns={5} onCellTap={task.level === 1 ? toggle : undefined} />
+      </div>
+      {#if veiled && task.level === 3}<div class="covered">?</div>{/if}
+    </div>
+    {#if task.level === 1}<p class="hint">Tipp: Du kannst Plättchen in die leeren Felder legen.</p>{/if}
   {/snippet}
 </TaskShell>
 
 <style>
-  .covered { width: 220px; height: 100px; display: grid; place-items: center; background: var(--olive); color: var(--white); border-radius: 18px; font-size: 48px; font-weight: 800; }
+  .stage { position: relative; width: 100%; }
+  .veiled { visibility: hidden; }
+  .covered { position: absolute; inset: 0; margin: auto; width: 220px; height: 100px; display: grid; place-items: center; background: var(--olive); color: var(--white); border-radius: 18px; font-size: 48px; font-weight: 800; }
   .hint { margin: 0; font-size: 16px; text-align: center; }
 </style>

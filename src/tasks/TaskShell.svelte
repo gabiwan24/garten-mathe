@@ -78,7 +78,8 @@
     <p class="solution">{task.solutionText}</p>
     <button class="big" onclick={finish}>Weiter</button>
   {:else}
-    {#if help && helpText}<p class="help-text">{helpText}</p>{/if}
+    <!-- Reserved up front (hidden until help) so the keypad does not move when the text appears. -->
+    {#if helpText}<p class="help-text" class:veiled={!help}>{helpText}</p>{/if}
     <Keypad bind:value={entry} disabled={!ready || phase !== 'answer'} onsubmit={submit} />
     <!-- Hidden during praise: it is disabled then anyway and would push the page below the fold. -->
     {#if phase === 'answer'}
@@ -96,6 +97,7 @@
   .message.praise { font-size: 24px; color: var(--green); }
   .extra { margin: 0; text-align: center; font-size: 32px; line-height: 36px; font-weight: 800; color: var(--pink); }
   .solution { margin: 0; text-align: center; font-size: 34px; font-weight: 800; }
-  .help-text { margin: 0; text-align: center; font-size: 18px; background: var(--white); border-radius: 14px; padding: 8px; }
+  .help-text { margin: 0; min-height: 66px; text-align: center; font-size: 18px; background: var(--white); border-radius: 14px; padding: 8px; }
+  .help-text.veiled { visibility: hidden; }
   .help:disabled { opacity: 0.45; }
 </style>
