@@ -1,5 +1,5 @@
 import { watchTilt } from '../sensors/tilt';
-import { isSettled, smooth, stepSpring, tiltToTarget, type Spring } from './sway';
+import { smooth, stepJoint, tiltToTarget, type Spring } from './sway';
 
 interface Joint {
   el: SVGGElement; x: number; y: number; rot: number; stiffness: number; root: boolean; spring: Spring;
@@ -30,25 +30,22 @@ function tick(t: number): void {
   const dt = last ? (t - last) / 1000 : 1 / 60;
   last = t;
   let allSettled = true;
+  let wrote = false;
   for (const joints of plants) {
     for (const j of joints) {
-      const target = tiltToTarget(gamma, j.stiffness, j.root);
-      const next = stepSpring(j.spring, target, j.stiffness, dt);
-      if (isSettled(next, target)) {
-        j.spring = { angle: target, vel: 0 };
-        if (j.idle) continue;
-        j.idle = true;
-      } else {
-        j.spring = next;
-        j.idle = false;
-        allSettled = false;
-      }
+      const r = stepJoint(j.idle, j.spring, tiltToTarget(gamma, j.stiffness, j.root), j.stiffness, dt);
+      j.spring = r.spring;
+      j.idle = r.settled;
+      if (!r.settled) allSettled = false;
+      if (!r.write) continue;
+      wrote = true;
       j.el.setAttribute('transform', `translate(${j.x} ${j.y}) rotate(${(j.rot + j.spring.angle).toFixed(2)})`);
     }
   }
   if (allSettled) {
     running = false;
-    restGamma = gamma;
+    // Only move the wake reference when something was drawn; otherwise a slow tilt would never add up.
+    if (wrote) restGamma = gamma;
     return;
   }
   frame = requestAnimationFrame(tick);

@@ -26,3 +26,17 @@ export function smooth(prev: number, next: number, alpha: number): number {
 export function isSettled(s: Spring, target: number, eps = 0.02): boolean {
   return Math.abs(s.angle - target) < eps && Math.abs(s.vel) < eps;
 }
+
+export interface JointStep { spring: Spring; write: boolean; settled: boolean }
+
+/**
+ * One frame for a joint. `idle` means the DOM already shows `s` (settled earlier).
+ * An idle joint that stays settled keeps its spring untouched, so a slow tilt accumulates
+ * against the last written angle instead of being re-snapped every frame.
+ */
+export function stepJoint(idle: boolean, s: Spring, target: number, stiffness: number, dt: number): JointStep {
+  const next = stepSpring(s, target, stiffness, dt);
+  if (!isSettled(next, target)) return { spring: next, write: true, settled: false };
+  if (idle) return { spring: s, write: false, settled: true };
+  return { spring: { angle: target, vel: 0 }, write: true, settled: true };
+}

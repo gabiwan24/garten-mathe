@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSettled, MAX_BASE_DEG, smooth, stepSpring, tiltToTarget } from '../../src/garden/sway';
+import { isSettled, MAX_BASE_DEG, smooth, stepJoint, stepSpring, tiltToTarget } from '../../src/garden/sway';
 
 describe('sway', () => {
   it('clamps the root target to ±8°', () => {
@@ -49,5 +49,37 @@ describe('sway', () => {
     expect(isSettled(flat, 0)).toBe(true);
     flat = stepSpring(flat, 0, 0.5, 1 / 60);
     expect(isSettled(flat, 0)).toBe(true);
+  });
+  it('stepJoint: an idle settled joint keeps its spring so slow tilts accumulate', () => {
+    const idle = { angle: 2, vel: 0 };
+    const r = stepJoint(true, idle, 2.005, 0.5, 1 / 60);
+    expect(r).toEqual({ spring: idle, write: false, settled: true });
+    const moving = stepJoint(true, idle, 2.5, 0.5, 1 / 60);
+    expect(moving.write).toBe(true);
+    expect(moving.settled).toBe(false);
+    const landing = stepJoint(false, { angle: 2.499, vel: 0.001 }, 2.5, 0.5, 1 / 60);
+    expect(landing).toEqual({ spring: { angle: 2.5, vel: 0 }, write: true, settled: true });
+  });
+  it.each([
+    [true, 0.9],
+    [false, 0.9],
+    [false, 0.15],
+  ])('slow tilt (0.05 deg per frame) reaches the screen (root=%s, stiffness=%s)', (root, stiffness) => {
+    let gamma = 0;
+    let spring = { angle: 0, vel: 0 };
+    let idle = true;
+    let shown = 0;
+    const frame = (input: number) => {
+      gamma = smooth(gamma, input, 0.15);
+      const r = stepJoint(idle, spring, tiltToTarget(gamma, stiffness, root), stiffness, 1 / 60);
+      spring = r.spring;
+      idle = r.settled;
+      if (r.write) shown = spring.angle;
+    };
+    for (let i = 1; i <= 600; i++) frame(i * 0.05);
+    for (let i = 0; i < 600; i++) frame(30);
+    expect(idle).toBe(true);
+    expect(shown).toBeCloseTo(tiltToTarget(30, stiffness, root), 1);
+    expect(Math.abs(shown)).toBeGreaterThan(1);
   });
 });
