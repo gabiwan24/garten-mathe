@@ -76,6 +76,44 @@ function crownPath(style: CrownStyle, p: CrownParams, R: number, grow: number): 
   }
 }
 
+const RIM_BAND_MID = 1.07; // the rim is the bloom scaled by 1.14, so its band mid-line sits at 1.07x the bloom outline
+
+// Point in the middle of the gold rim band at the upper left of the crown, per style. The highlight is drawn on top of the
+// bloom, so it has to sit on the thin visible band instead of a fixed offset that drifts off the outline.
+function rimShinePoint(style: CrownStyle, p: CrownParams, R: number): [number, number, number] {
+  const target = (Math.PI * 5) / 4; // upper left in SVG coordinates (y points down)
+  // Blob styles: [centre y, size factor, y stretch, radial wobble m(a)]. The third value rotates the tall shine oval along the outline.
+  const blob = (cy: number, size: number, stretch: number, m: (a: number) => number, snap: boolean): [number, number, number] => {
+    let a = target;
+    if (snap) {
+      // Move to the nearest lobe peak so the band is at its widest there.
+      let best = -Infinity;
+      for (let i = -12; i <= 12; i++) {
+        const t = target + i * 0.05;
+        if (m(t) > best + 1e-9) { best = m(t); a = t; }
+      }
+    }
+    const r = R * size * m(a) * RIM_BAND_MID;
+    return [r * Math.cos(a), cy + r * Math.sin(a) * stretch, (Math.atan2(Math.sin(a), stretch * Math.cos(a)) * 180) / Math.PI];
+  };
+  switch (style) {
+    case 'petal': return blob(-R, 1, 1, (a) => 1 + p.depth * Math.sin(p.petals * a + p.phase), true);
+    case 'round': return blob(-R, 1, 1, (a) => 1 + 0.12 * Math.sin(p.roundPetals * a + p.phase), true);
+    case 'tomato': return blob(-R, 1, 0.88, (a) => 1 + 0.04 * Math.sin(6 * a + p.phase), false);
+    case 'lemon': return blob(-R * 0.9, 0.95, 0.72, (a) => 1 + 0.12 * Math.sin(2 * a + Math.PI / 2), false);
+    case 'coralFan': return blob(-R * 1.1, 1, 1.15, (a) => 1 + 0.3 * Math.sin(p.coralLobes * a + p.phase) + 0.08 * Math.sin(2 * a), true);
+    case 'tulip': return [-R * 0.8, -R * 1.2, 0]; // left wall of the cup, midway between bloom (-0.75R) and rim (-0.855R)
+    case 'cherries': return [-R * 0.5 - R * 0.535 * Math.SQRT1_2, R * 0.25 - R * 0.535 * Math.SQRT1_2, 225]; // upper left of the left cherry
+    case 'star': {
+      // Star tips sit at multiples of 2PI/points; pick the one nearest to the target and stay near the base of its spike.
+      const step = (Math.PI * 2) / p.starPoints;
+      const tip = -Math.PI / 2 + Math.round((target + Math.PI / 2) / step) * step;
+      const r = R * 1.05 * 1.08;
+      return [r * Math.cos(tip), -R + r * Math.sin(tip), (tip * 180) / Math.PI - 90];
+    }
+  }
+}
+
 export function generatePlant(spec: PlantSpec): PlantNode {
   const rng = createRng(spec.seed);
   let counter = 0;
@@ -144,7 +182,6 @@ export function generatePlant(spec: PlantSpec): PlantNode {
     if (gold === 'rim') {
       const rim = node('rim', depth + 1, crownPath(style, params, R, 1.14), GOLD, 0, 0, 0, null);
       rim.gold = true;
-      rim.children.push(shine(-R * 1.05, -R, R * 0.1, depth + 2));
       holder.children.push(rim);
     }
     holder.children.push(node('bloom', depth + 1, crownPath(style, params, R, 1), crownColor, 0, 0, 0, null));
@@ -167,6 +204,11 @@ export function generatePlant(spec: PlantSpec): PlantNode {
     }
     if (style === 'tomato') holder.children.push(node('calyx', depth + 1, starPath(0, -R * 1.8, R * 0.45, R * 0.15, 6), PALETTE.green, 0, 0, 0, null));
     if (style === 'cherries') holder.children.push(node('calyx', depth + 1, leafPath(R * 0.9, R * 0.45, 2, 0.03), PALETTE.green, 0, 0, 50, null));
+    if (gold === 'rim') {
+      // Last child = drawn on top of the bloom; otherwise the highlight would vanish behind it.
+      const [sx, sy, srot] = rimShinePoint(style, params, R);
+      holder.children.push(node('shine', depth + 1, polarBlob(0, 0, R * 0.08, [], 16, 2.2), GOLD_SHINE, sx, sy, srot, null));
+    }
     return holder;
   };
 
