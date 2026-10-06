@@ -3,7 +3,7 @@
   import type { TaskTypeId } from '../lib/types';
   import { commit, snapshot, app } from '../state/app.svelte';
   import { exportState, importState } from '../store/storage';
-  import { resetLevel, withSettings } from './settings';
+  import { applyImportedState, resetLevel, withSettings } from './settings';
   import SetupPin from './SetupPin.svelte';
   import { dailyMinutes, typeSummaries, wobblyItems } from './stats';
 
@@ -50,13 +50,13 @@
     }
     const n = result.state.plants.length;
     if (!confirm(`Backup mit ${n} ${n === 1 ? 'Pflanze' : 'Pflanzen'} laden? Der aktuelle Stand wird ersetzt.`)) return;
-    commit(result.state);
+    commit(applyImportedState(snapshot(), result.state));
     importMessage = 'Backup geladen.';
   }
 </script>
 
 {#if changingPin}
-  <SetupPin title="Neue PIN" onDone={() => (changingPin = false)} />
+  <SetupPin title="Neue PIN" onDone={() => (changingPin = false)} onCancel={() => (changingPin = false)} />
 {:else}
   <div class="parents">
     <header>
@@ -119,7 +119,7 @@
       </div>
       <label class="row"><input type="checkbox" checked={app.data.settings.vibration} onchange={(e) => commit(withSettings(snapshot(), { vibration: e.currentTarget.checked }))} /> Vibration</label>
       <label class="row"><input type="checkbox" checked={app.data.settings.tilt} onchange={(e) => commit(withSettings(snapshot(), { tilt: e.currentTarget.checked }))} /> Pflanzen neigen sich mit dem Handy</label>
-      {#each summaries as s (s.type)}
+      {#each summaries.filter((s) => s.unlocked) as s (s.type)}
         <button class="secondary" onclick={() => reset(s.type, s.label)}>Stufe zurücksetzen: {s.label}</button>
       {/each}
       <button class="secondary" onclick={() => (changingPin = true)}>PIN ändern</button>
@@ -127,7 +127,7 @@
 
     <section>
       <h2>Backup</h2>
-      <p>Der Garten liegt nur auf diesem Handy. Ein Backup schützt ihn beim Handywechsel oder wenn Browserdaten gelöscht werden.</p>
+      <p>Der Garten liegt nur auf diesem Handy. Ein Backup schützt ihn beim Handywechsel oder wenn Browserdaten gelöscht werden. Die Datei enthält auch die PIN im Klartext; beim Laden bleibt die aktuelle PIN erhalten.</p>
       <button class="secondary" onclick={exportBackup}>Backup exportieren</button>
       <label class="secondary file">Backup importieren<input type="file" accept="application/json,.json" onchange={importBackup} /></label>
       {#if importMessage}<p>{importMessage}</p>{/if}

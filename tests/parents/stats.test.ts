@@ -29,6 +29,13 @@ describe('stats', () => {
     expect(days[13]).toEqual({ date: '2026-10-06', minutes: 3 });
     expect(days[12].minutes).toBe(0);
   });
+  it('shows at least one minute for any day with practice, even under 30 s', () => {
+    const s = defaultState();
+    s.rounds = [{ date: '2026-10-06', taskType: 'fillTen', firstTry: 5, total: 10, ms: 20000 }];
+    const days = dailyMinutes(s, '2026-10-06');
+    expect(days[13].minutes).toBe(1);
+    expect(days[12].minutes).toBe(0);
+  });
   it('ranks the shakiest items first and skips items without errors', () => {
     const s = defaultState();
     s.items = {

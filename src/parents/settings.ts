@@ -11,3 +11,8 @@ export function resetLevel(state: AppState, type: TaskTypeId): AppState {
     history: { ...state.history, [type]: [] },
   };
 }
+
+/** The PIN protects this device, so an imported backup must never replace it. */
+export function applyImportedState(current: AppState, imported: AppState): AppState {
+  return { ...imported, settings: { ...imported.settings, pin: current.settings.pin } };
+}

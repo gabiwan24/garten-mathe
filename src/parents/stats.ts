@@ -36,7 +36,8 @@ export function dailyMinutes(state: AppState, endDate: string, days = 14): { dat
   return Array.from({ length: days }, (_, i) => {
     const date = addDays(endDate, i - days + 1);
     const ms = state.rounds.filter((r) => r.date === date).reduce((s, r) => s + r.ms, 0);
-    return { date, minutes: Math.round(ms / 60000) };
+    // A day with any practice must never look like a day without.
+    return { date, minutes: ms > 0 ? Math.max(1, Math.round(ms / 60000)) : 0 };
   });
 }
 

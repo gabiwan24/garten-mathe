@@ -3,7 +3,7 @@
   import Keypad from '../tasks/components/Keypad.svelte';
   import { withSettings } from './settings';
 
-  let { title = 'Willkommen bei Garten-Mathe', onDone }: { title?: string; onDone: () => void } = $props();
+  let { title = 'Willkommen bei Garten-Mathe', onDone, onCancel }: { title?: string; onDone: () => void; onCancel?: () => void } = $props();
 
   let first = $state<string | null>(null);
   let entry = $state('');
@@ -35,6 +35,7 @@
   <h1>{title}</h1>
   <p>{message}</p>
   <Keypad bind:value={entry} maxLength={4} masked onsubmit={submit} />
+  {#if onCancel}<button class="secondary" onclick={onCancel}>Abbrechen</button>{/if}
 </div>
 
 <style>
