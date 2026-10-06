@@ -21,3 +21,8 @@ export function stepSpring(s: Spring, target: number, stiffness: number, dt: num
 export function smooth(prev: number, next: number, alpha: number): number {
   return prev + (next - prev) * alpha;
 }
+
+/** True when the spring is at rest on its target, so no further frames are needed. */
+export function isSettled(s: Spring, target: number, eps = 0.02): boolean {
+  return Math.abs(s.angle - target) < eps && Math.abs(s.vel) < eps;
+}

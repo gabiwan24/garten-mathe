@@ -4,14 +4,13 @@
   import DemoGallery from './garden/DemoGallery.svelte';
   import Garden from './garden/Garden.svelte';
   import PlantSheet from './garden/PlantSheet.svelte';
-  import { today } from './lib/date';
   import type { PlantRecord, TaskTypeId } from './lib/types';
   import Parents from './parents/Parents.svelte';
   import PinGate from './parents/PinGate.svelte';
   import SetupPin from './parents/SetupPin.svelte';
   import RoundEnd from './screens/RoundEnd.svelte';
   import RoundScreen from './screens/RoundScreen.svelte';
-  import { app } from './state/app.svelte';
+  import { app, clock } from './state/app.svelte';
 
   type Screen =
     | { name: 'setupPin' }
@@ -41,7 +40,7 @@
   {#if selected}
     <PlantSheet
       plant={selected}
-      canWater={!limitReached(app.data, today())}
+      canWater={!limitReached(app.data, clock.day)}
       onWater={() => startRound(selected!.taskType, selected!.id)}
       onClose={() => (selected = null)}
     />

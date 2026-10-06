@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { limitReached, suggestType, unlockedTypes } from '../engine/suggest';
-  import { today } from '../lib/date';
   import type { PlantRecord, TaskTypeId } from '../lib/types';
   import { prefersReducedMotion } from '../sensors/tilt';
-  import { app } from '../state/app.svelte';
+  import { app, clock } from '../state/app.svelte';
   import { TASK_TYPES } from '../tasks/registry';
   import Background from './Background.svelte';
   import Bed from './Bed.svelte';
@@ -16,7 +15,7 @@
   } = $props();
 
   const sway = app.data.settings.tilt && !prefersReducedMotion();
-  const limit = $derived(limitReached(app.data, today()));
+  const limit = $derived(limitReached(app.data, clock.day));
   const suggested = $derived(suggestType(app.data));
   const types = $derived(unlockedTypes(app.data).slice(0, 3));
 
@@ -30,6 +29,7 @@
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
   let pressing = $state(false);
   function pressStart() {
+    pressEnd();
     pressing = true;
     pressTimer = setTimeout(() => {
       pressing = false;
@@ -41,6 +41,7 @@
     if (pressTimer) clearTimeout(pressTimer);
     pressTimer = null;
   }
+  onDestroy(pressEnd);
 </script>
 
 <Background />

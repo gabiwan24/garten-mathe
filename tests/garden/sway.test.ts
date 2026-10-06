@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_BASE_DEG, smooth, stepSpring, tiltToTarget } from '../../src/garden/sway';
+import { isSettled, MAX_BASE_DEG, smooth, stepSpring, tiltToTarget } from '../../src/garden/sway';
 
 describe('sway', () => {
   it('clamps the root target to ±8°', () => {
@@ -29,5 +29,25 @@ describe('sway', () => {
   });
   it('smooth moves part of the way', () => {
     expect(smooth(0, 10, 0.2)).toBeCloseTo(2);
+  });
+  it('isSettled needs both position and velocity at rest', () => {
+    expect(isSettled({ angle: 5, vel: 0 }, 5)).toBe(true);
+    expect(isSettled({ angle: 5.01, vel: 0.01 }, 5)).toBe(true);
+    expect(isSettled({ angle: 5.5, vel: 0 }, 5)).toBe(false);
+    expect(isSettled({ angle: 5, vel: 0.5 }, 5)).toBe(false);
+    expect(isSettled({ angle: 5.1, vel: 0 }, 5, 0.2)).toBe(true);
+  });
+  it('a spring reaches the settled state within a few seconds', () => {
+    let s = { angle: 0, vel: 0 };
+    let frames = 0;
+    while (!isSettled(s, 5) && frames < 600) {
+      s = stepSpring(s, 5, 0.15, 1 / 60);
+      frames++;
+    }
+    expect(frames).toBeLessThan(600);
+    let flat = { angle: 0, vel: 0 };
+    expect(isSettled(flat, 0)).toBe(true);
+    flat = stepSpring(flat, 0, 0.5, 1 / 60);
+    expect(isSettled(flat, 0)).toBe(true);
   });
 });

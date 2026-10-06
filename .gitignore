@@ -27,3 +27,4 @@ dist-ssr
 CLAUDE.local.md
 dev-dist
 .unlazy/
+.superpowers/

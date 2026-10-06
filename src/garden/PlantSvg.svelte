@@ -14,7 +14,8 @@
     if (!sway) return;
     let unregister: (() => void) | null = null;
     // Only plants on screen are animated.
-    const observer = new IntersectionObserver(([entry]) => {
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries.at(-1)!;
       if (entry.isIntersecting && !unregister) unregister = registerSway(svg);
       else if (!entry.isIntersecting && unregister) {
         unregister();

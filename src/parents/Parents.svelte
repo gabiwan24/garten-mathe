@@ -1,7 +1,7 @@
 <script lang="ts">
   import { today } from '../lib/date';
   import type { TaskTypeId } from '../lib/types';
-  import { commit, snapshot, app } from '../state/app.svelte';
+  import { commit, snapshot, app, clock } from '../state/app.svelte';
   import { exportState, importState } from '../store/storage';
   import { applyImportedState, resetLevel, withSettings } from './settings';
   import SetupPin from './SetupPin.svelte';
@@ -10,7 +10,7 @@
   let { onClose }: { onClose: () => void } = $props();
 
   const summaries = $derived(typeSummaries(app.data));
-  const days = $derived(dailyMinutes(app.data, today()));
+  const days = $derived(dailyMinutes(app.data, clock.day));
   const maxMinutes = $derived(Math.max(10, ...days.map((d) => d.minutes)));
   const wobbly = $derived(wobblyItems(app.data));
   let changingPin = $state(false);
