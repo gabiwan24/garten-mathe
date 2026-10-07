@@ -46,7 +46,7 @@
   .end { display: grid; gap: 12px; justify-items: center; padding: 64px 0 24px; text-align: center; }
   .stage { width: 52%; animation: plant 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); transform-origin: bottom center; }
   .stage.pracht { animation-duration: 1.1s; }
-  .seedstage { padding: 24px 0; animation: plant 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); transform-origin: bottom center; }
+  .seedstage { padding: 48px 0 24px; animation: plant 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); transform-origin: bottom center; }
   .seedstage.pracht { animation-duration: 1.1s; }
   @keyframes plant { from { transform: scale(0.1); opacity: 0; } }
   h1 { margin: 0; font-size: 30px; font-weight: 800; color: var(--navy); }

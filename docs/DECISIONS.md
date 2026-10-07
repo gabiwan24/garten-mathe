@@ -15,3 +15,9 @@
 2026-10-07 – Day refresh via visibilitychange/focus (clock in state/app.svelte.ts) – the daily limit resets over midnight without an app restart
 2026-10-07 – Shake detector: threshold 6 m/s², re-arm 3, 3 strokes within 1 s, gravity low-pass fallback when the phone reports no linear acceleration, hint when no motion data arrives – first phone test: shaking did not trigger (old threshold 11 was too high for a gentle shake)
 2026-10-07 – Manifest display fullscreen (+ display_override fullscreen→standalone) and top safe-area padding – the user wants no Android status bar; reinstall may be needed for the phone to pick up the new display mode
+2026-10-07 – 3-row dense slot grid with stagger and per-row scale – many plants fit in a wide garden and the back rows read as depth
+2026-10-07 – A new seed is stored immediately with `slot: null` – a closed app never loses an earned seed
+2026-10-07 – Marker + confirm button instead of instant planting – taps on the dense grid are easy to miss
+2026-10-07 – Golden seed for a Prachtpflanze – the reward is visible before planting while stage and species stay secret
+2026-10-07 – Planting screen renders the garden without sway – it commits while mounted, which would break the router invariant (swayLoop captures DOM joints once)
+2026-10-07 – Schema v2 migration distributes existing plants over the rows (slotForIndex) – old gardens fill all three rows instead of one

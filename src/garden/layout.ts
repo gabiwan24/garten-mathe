@@ -47,6 +47,14 @@ export function freeSlots(plants: readonly PlantRecord[]): Slot[] {
   return out;
 }
 
+// Where the garden should open for planting: the first free slot at or after the rightmost
+// placed column, else the first free slot overall, null when the garden is full.
+export function focusSlot(plants: readonly PlantRecord[]): Slot | null {
+  const free = freeSlots(plants);
+  const lastCol = plants.reduce((m, p) => (p.slot && p.slot.col > m ? p.slot.col : m), 0);
+  return free.find((s) => s.col >= lastCol) ?? free[0] ?? null;
+}
+
 export function pendingSeed(plants: readonly PlantRecord[]): PlantRecord | null {
   return plants.find((p) => p.slot === null) ?? null;
 }

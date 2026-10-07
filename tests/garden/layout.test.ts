@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colsFor, drawOrder, freeSlots, gardenWidth, isFree, MIN_COLS, pendingSeed, ROWS, slotForIndex, slotGeometry, slotKey } from '../../src/garden/layout';
+import { colsFor, drawOrder, focusSlot, freeSlots, gardenWidth, isFree, MIN_COLS, pendingSeed, ROWS, slotForIndex, slotGeometry, slotKey } from '../../src/garden/layout';
 import type { PlantRecord, Row, Slot } from '../../src/lib/types';
 
 const plant = (id: string, slot: Slot | null): PlantRecord =>
@@ -70,5 +70,29 @@ describe('geometry', () => {
       expect(x).toBeLessThanOrEqual(gardenWidth(cols));
     }
     expect(seen.size).toBe(cols * ROWS);
+  });
+});
+
+describe('focusSlot', () => {
+  const at = (n: number, s: Slot) => plant(`p${n}`, s);
+  it('opens at column 0 when nothing is planted', () => {
+    expect(focusSlot([])).toEqual({ row: 0, col: 0 });
+  });
+  it('prefers the first free slot at or after the rightmost placed column', () => {
+    const plants = [at(1, { row: 0, col: 0 }), at(2, { row: 2, col: 5 })];
+    expect(focusSlot(plants)).toEqual({ row: 0, col: 5 });
+  });
+  it('ignores holes before the last column', () => {
+    const plants = [at(1, { row: 0, col: 4 })];
+    expect(focusSlot(plants)!.col).toBeGreaterThanOrEqual(4);
+  });
+  it('never returns an occupied slot when the tail is full', () => {
+    const cols = colsFor(40);
+    const plants: PlantRecord[] = [];
+    // Fill the last columns completely, leave the earlier ones empty.
+    for (let c = cols - 4; c < cols; c++) for (let r = 0; r < ROWS; r++) plants.push(at(plants.length, { row: r as Row, col: c }));
+    const s = focusSlot(plants)!;
+    expect(s).not.toBeNull();
+    expect(isFree(plants, s)).toBe(true);
   });
 });

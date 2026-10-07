@@ -3,7 +3,7 @@
   import { plantSeed } from '../engine/planting';
   import Background from '../garden/Background.svelte';
   import GardenCanvas from '../garden/GardenCanvas.svelte';
-  import { freeSlots } from '../garden/layout';
+  import { focusSlot } from '../garden/layout';
   import Seed from '../garden/Seed.svelte';
   import type { Slot } from '../lib/types';
   import { vibrate } from '../sensors/vibrate';
@@ -19,12 +19,7 @@
   const pracht = initial?.pracht ?? false;
 
   // Scroll to the end of what is already planted, onto the first free slot there.
-  const focus: Slot | null = (() => {
-    const placed = app.data.plants.flatMap((p) => (p.slot ? [p.slot] : []));
-    if (!placed.length) return null;
-    const last = placed.reduce((a, b) => (b.col > a.col ? b : a));
-    return freeSlots(app.data.plants).find((s) => s.col >= last.col) ?? last;
-  })();
+  const focus = focusSlot(app.data.plants);
 
   let marker = $state<Slot | null>(null);
   let phase = $state<'choose' | 'grown'>('choose');
@@ -35,7 +30,13 @@
 
   function confirm() {
     if (!marker || phase !== 'choose') return;
-    commit(plantSeed(snapshot(), plantId, marker));
+    const next = plantSeed(snapshot(), plantId, marker);
+    // Do not claim success unless the seed really got a slot.
+    if (!next.plants.find((x) => x.id === plantId)?.slot) {
+      marker = null;
+      return;
+    }
+    commit(next);
     marker = null;
     phase = 'grown';
     vibrate(pracht ? [80, 60, 160] : [30, 40, 30], vibration);
@@ -46,8 +47,8 @@
 {#if !invalid}
   <div class="plant">
     <div class="banner">
-      <Seed gold={pracht} size={34} bob={phase === 'choose'} />
-      <p>{phase === 'grown' ? 'Deine Pflanze wächst!' : marker ? 'Hier pflanzen?' : 'Tippe auf eine freie Erdstelle.'}</p>
+      {#if phase === 'choose'}<Seed gold={pracht} size={34} bob />{/if}
+      <p aria-live="polite">{phase === 'grown' ? 'Deine Pflanze wächst!' : marker ? 'Hier pflanzen?' : 'Tippe auf eine freie Erdstelle.'}</p>
     </div>
 
     <main>
@@ -75,7 +76,7 @@
 
 <style>
   .plant { display: flex; flex-direction: column; height: calc(100dvh - env(safe-area-inset-top)); }
-  .banner { display: flex; align-items: center; gap: 12px; margin-top: 12px; min-height: 56px; padding: 8px 14px; background: var(--white); border-radius: 18px; }
+  .banner { display: flex; align-items: center; gap: 12px; margin-top: 12px; min-height: 64px; padding: 8px 14px; background: var(--white); border-radius: 18px; }
   .banner p { margin: 0; font-size: 20px; font-weight: 800; color: var(--navy); }
   main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
   main > :global(.scroller) { flex: none; }

@@ -61,7 +61,7 @@
 
   let scroller: HTMLDivElement;
   onMount(() => {
-    if (focus) scroller.scrollLeft = slotGeometry(focus).x - scroller.clientWidth / 2;
+    if (focus) scroller.scrollLeft = slotGeometry(focus).x - scroller.clientWidth * 0.35;
     else if (placed.length) {
       const right = Math.max(...placed.map((p) => slotGeometry(p.slot!).x));
       scroller.scrollLeft = right - scroller.clientWidth + 80;

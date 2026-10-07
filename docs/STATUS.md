@@ -2,34 +2,25 @@
 _Updated: 2026-10-07_
 
 ## Now
-M1 is finished on branch m1-build (17+ commits). All tasks reviewed, final review done and its fixes applied.
-Open: publish to GitHub Pages (needs the user's approval, plan Task 12 Step 6) and phone test (plan Task 13).
+Feature "Selbst einpflanzen + breiter Garten" is done on branch feat-planting (stacked on fix-shake, PR #2: shake fix + fullscreen).
+Open: phone test, then merge.
 
 ## Works
-- 3 task types with 4 levels each: Zahlen zerlegen (real shaking + tap fallback), Zehnerfeld auffüllen, Plus über die 10 (guided)
-- Garden with procedural plants + tilt sway (sway loop sleeps when everything is at rest)
-- Prachtpflanze (exactly 10/10 first try without help)
-- Watering (grows only the watered plant)
-- Leitner boxes + level engine
-- Daily limit (resets over midnight via visibilitychange/focus)
-- PIN-protected parents area with stats, settings, backup
-- Installable offline PWA
+- 3 task types with 4 levels each, Prachtpflanze (10/10 first try, no help), watering, Leitner + level engine, daily limit
+- Round end gives a seed (golden for a Prachtpflanze); the child plants it on a free soil slot (marker + confirm button)
+- Wide scrollable garden, 3 dense rows with stagger and row scale; pending seeds survive a closed app
+- Schema v2 migration spreads existing plants over the rows
+- PIN-protected parents area, backup, installable offline PWA, fullscreen manifest
 
 ## Next
-1. Phone test: shake threshold, long press on the gear under Android, "OK" visible without scrolling at 360x640, gold-rim shine, garden header overlapping cloud/sun, battery/warmth with garden open
-2. Publish repo + GitHub Pages
-3. Milestone 2: Blitzblick, Zahlenstrahl & Nachbarn; sanitize() in withDefaults, downgrade protection before schema v2, Android back button via history, garden rendering for >500 plants
+1. Phone test: planting flow, scrolling, performance with many plants, gold seed, shake, fullscreen
+2. Merge fix-shake (PR #2) and feat-planting; publish to GitHub Pages
+3. Milestone 2 tasks: Blitzblick, Zahlenstrahl & Nachbarn; sanitize() in withDefaults, downgrade protection
 
 ## Known issues
-Deferred minor list:
-- re-entry snap of sway after unregister
-- `:global(body)` placement
-- `.extra` 46 px keypad jump during the disabled praise
-- "10 Aufgaben" hard-coded
-- PlantSheet has no aria-modal/Escape
-- decompose ms includes waiting-for-shake time
-- wobbly list uses cumulative `wrong`
-- trend ignores level changes
-- generic conversation tip
-- all Nunito woff subsets precached
-- PIN stored in plain text
+- Android back button closes the app (no history entries yet)
+- Garden renders all plants; add windowing if > ~500
+- Focus uses array order, not planting order
+- Non-pracht vibrate pattern (planting) not observable in a desktop browser
+- Plants are narrow, so young sprouts look sparse in the wide garden
+- Older minor items: sway re-entry snap, PlantSheet lacks aria-modal/Escape, "10 Aufgaben" hard-coded, PIN stored in plain text
