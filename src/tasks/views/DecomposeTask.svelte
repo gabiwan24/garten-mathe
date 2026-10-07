@@ -17,6 +17,7 @@
   const showBox = $derived(task.level !== 4);
   let shaken = $state(false);
   let leftHidden = $state(false);
+  let noSensor = $state(false);
   let stopShake = () => {};
 
   function shake() {
@@ -29,7 +30,7 @@
   }
 
   onMount(() => {
-    if (task.level !== 4) stopShake = watchShake(shake);
+    if (task.level !== 4) stopShake = watchShake(shake, () => (noSensor = true));
     return () => stopShake();
   });
 </script>
@@ -50,6 +51,7 @@
           <Plates count={task.total} size={22} />
           <p class="hint">{task.total} Plättchen sind in der Box.<br />Schüttel das Handy!</p>
           <button class="secondary" onclick={shake}>oder hier tippen zum Schütteln</button>
+          {#if noSensor}<p class="note">Dein Handy meldet keine Bewegung. Tippe auf den Knopf.</p>{/if}
         {:else}
           <div class="halves">
             <div class="half drop">
@@ -71,6 +73,7 @@
   .veiled { visibility: hidden; }
   .split { display: flex; gap: 16px; justify-content: center; align-items: center; }
   .hint { margin: 0; text-align: center; font-size: 20px; }
+  .note { margin: 0; text-align: center; font-size: 16px; }
   .halves { display: grid; grid-template-columns: 1fr 6px 1fr; width: 100%; min-height: 110px; align-items: center; }
   .half { display: grid; justify-items: center; }
   .divider { height: 100%; background: var(--soil); border-radius: 3px; }

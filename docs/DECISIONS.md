@@ -13,3 +13,4 @@
 2026-10-07 – Watering rounds count toward the daily limit – one limit for all practice keeps the daily time bounded
 2026-10-07 – Maskable icon is full-bleed via pwa-assets.config.ts – Android masks crop it, so no transparent padding or white corners
 2026-10-07 – Day refresh via visibilitychange/focus (clock in state/app.svelte.ts) – the daily limit resets over midnight without an app restart
+2026-10-07 – Shake detector: threshold 6 m/s², re-arm 3, 3 strokes within 1 s, gravity low-pass fallback when the phone reports no linear acceleration, hint when no motion data arrives – first phone test: shaking did not trigger (old threshold 11 was too high for a gentle shake)
