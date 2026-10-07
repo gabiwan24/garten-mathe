@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { onDestroy, onMount, tick } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { limitReached, suggestType, unlockedTypes } from '../engine/suggest';
   import type { PlantRecord, TaskTypeId } from '../lib/types';
   import { prefersReducedMotion } from '../sensors/tilt';
   import { app, clock } from '../state/app.svelte';
   import { TASK_TYPES } from '../tasks/registry';
   import Background from './Background.svelte';
-  import Bed from './Bed.svelte';
+  import GardenCanvas from './GardenCanvas.svelte';
+  import { pendingSeed } from './layout';
 
-  let { onStart, onParents, onPlant }: {
+  let { onStart, onParents, onPlant, onSeed }: {
     onStart: (type: TaskTypeId, wateringPlantId: string | null) => void;
     onParents: () => void;
     onPlant: (plant: PlantRecord) => void;
+    onSeed: (plantId: string) => void;
   } = $props();
 
   const sway = app.data.settings.tilt && !prefersReducedMotion();
@@ -19,11 +21,9 @@
   const suggested = $derived(suggestType(app.data));
   const types = $derived(unlockedTypes(app.data).slice(0, 3));
 
-  let list: HTMLElement;
-  onMount(async () => {
-    await tick();
-    list.scrollTo({ top: list.scrollHeight });
-  });
+  const seed = $derived(pendingSeed(app.data.plants));
+  // Evaluated once: the canvas only uses it on mount.
+  const focus = app.data.plants.filter((p) => p.slot !== null).at(-1)?.slot ?? null;
 
   // Long press keeps the parents' area out of reach for accidental taps.
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -59,16 +59,16 @@
       aria-label="Elternbereich (2 Sekunden drücken)">⚙</button>
   </header>
 
-  <main bind:this={list}>
+  <main>
     {#if app.data.plants.length === 0}
       <p class="empty">Dein Garten ist noch leer.<br />Starte deine erste Runde!</p>
     {/if}
-    <div class="grid">
-      {#each app.data.plants as plant (plant.id)}
-        <Bed {plant} {sway} onclick={() => onPlant(plant)} />
-      {/each}
-    </div>
+    <GardenCanvas plants={app.data.plants} {sway} {onPlant} {focus} />
   </main>
+
+  {#if seed}
+    <button class="seed-banner" onclick={() => onSeed(seed.id)}>🌱 Du hast noch einen Samen – einpflanzen</button>
+  {/if}
 
   <footer>
     {#if limit}
@@ -93,9 +93,10 @@
   .gear { width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--cream); font-size: 24px; position: relative; }
   .gear.pressing { animation: fill 2s linear forwards; }
   @keyframes fill { from { box-shadow: inset 0 0 0 0 var(--green); } to { box-shadow: inset 0 0 0 24px var(--green); } }
-  main { flex: 1; overflow-y: auto; padding: 120px 0 16px; }
-  .empty { text-align: center; font-size: 20px; color: var(--ink); background: var(--white); border-radius: 18px; padding: 16px; }
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 6px; align-items: end; }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; position: relative; }
+  main > :global(.scroller) { flex: none; }
+  .empty { position: absolute; top: 8px; left: 0; right: 0; z-index: 5000; margin: 0; text-align: center; font-size: 20px; color: var(--ink); background: var(--white); border-radius: 18px; padding: 16px; }
+  .seed-banner { min-height: 48px; margin-top: 8px; border: 0; border-radius: 16px; background: var(--white); font-size: 16px; font-weight: 800; color: var(--navy); padding: 8px 12px; }
   footer { padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 10px; }
   .chips { display: flex; gap: 8px; }
   .chip { flex: 1; min-height: 48px; border: 0; border-radius: 16px; background: var(--white); font-size: 15px; font-weight: 800; padding: 6px; }

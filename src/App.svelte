@@ -36,7 +36,7 @@
 {:else if screen.name === 'setupPin'}
   <SetupPin onDone={toGarden} />
 {:else if screen.name === 'garden'}
-  <Garden onStart={startRound} onParents={() => (screen = { name: 'pin' })} onPlant={(p) => (selected = p)} />
+  <Garden onStart={startRound} onParents={() => (screen = { name: 'pin' })} onPlant={(p) => (selected = p)} onSeed={() => {}} />
   {#if selected}
     <PlantSheet
       plant={selected}

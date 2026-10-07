@@ -5,11 +5,11 @@ export const MIN_COLS = 7;
 export const FREE_MIN = 12;
 export const SPACING = 56;
 export const PAD = 24;
-export const GARDEN_H = 360;
+export const GARDEN_H = 340;
 export const ROW_SCALE: Record<Row, number> = { 0: 0.7, 1: 0.85, 2: 1 };
 // Stagger the rows so plants of different rows do not stand exactly behind each other.
 export const ROW_OFFSET: Record<Row, number> = { 0: SPACING / 2, 1: SPACING / 4, 2: 0 };
-export const ROW_BASE_Y: Record<Row, number> = { 0: 150, 1: 245, 2: 335 };
+export const ROW_BASE_Y: Record<Row, number> = { 0: 150, 1: 232, 2: 318 };
 
 export function colsFor(plantCount: number): number {
   return Math.max(MIN_COLS, Math.ceil((plantCount + FREE_MIN) / ROWS));
