@@ -6,14 +6,16 @@
   import { SCENE } from './palette';
   import { VIEW } from './plant';
   import PlantSvg from './PlantSvg.svelte';
+  import Seed from './Seed.svelte';
   import { polarBlob } from './shapes';
 
-  let { plants, sway, onPlant, onSlot, marker = null, pulseFree = false, focus = null, growing = null }: {
+  let { plants, sway, onPlant, onSlot, marker = null, markerGold = false, pulseFree = false, focus = null, growing = null }: {
     plants: PlantRecord[];
     sway: boolean;
     onPlant?: (p: PlantRecord) => void;
     onSlot?: (slot: Slot) => void;
     marker?: Slot | null;
+    markerGold?: boolean;
     pulseFree?: boolean;
     focus?: Slot | null;
     growing?: string | null;
@@ -91,9 +93,11 @@
 
     {#if marker}
       {@const g = slotGeometry(marker)}
-      <svg class="marker" viewBox="0 0 20 12" style="left:{g.x - 10 * g.scale * 1.2}px;top:{g.baseY - 6 * g.scale * 1.2 - 4}px;width:{20 * g.scale * 1.2}px;z-index:{z(marker) + 500}" aria-hidden="true">
-        <ellipse cx="10" cy="6" rx="9" ry="5" fill="#6B4226" />
-      </svg>
+      {@const mw = 34 * g.scale}
+      <!-- The seed rests on the mound: its tip points up, its belly sits at the mound centre. -->
+      <div class="marker" style="left:{g.x - mw / 2}px;top:{g.baseY - (mw * 28) / 20 + 8 * g.scale}px;z-index:{z(marker) + 500}">
+        <Seed gold={markerGold} size={mw} />
+      </div>
     {/if}
 
     {#if onSlot}
@@ -118,7 +122,7 @@
   .plant.grow { animation: grow 0.9s ease-out; }
   .plant.grow.pracht { animation-duration: 1.4s; }
   @keyframes grow { from { transform: scale(0.1); } to { transform: scale(1); } }
-  .marker { position: absolute; display: block; height: auto; pointer-events: none; }
+  .marker { position: absolute; pointer-events: none; }
   .slot { position: absolute; padding: 0; border: 0; background: none; cursor: pointer; }
   .pulse { animation: pulse 1.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }

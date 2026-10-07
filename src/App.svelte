@@ -8,6 +8,7 @@
   import Parents from './parents/Parents.svelte';
   import PinGate from './parents/PinGate.svelte';
   import SetupPin from './parents/SetupPin.svelte';
+  import PlantingScreen from './screens/PlantingScreen.svelte';
   import RoundEnd from './screens/RoundEnd.svelte';
   import RoundScreen from './screens/RoundScreen.svelte';
   import { app, clock } from './state/app.svelte';
@@ -17,6 +18,7 @@
     | { name: 'garden' }
     | { name: 'round'; taskType: TaskTypeId; wateringPlantId: string | null }
     | { name: 'roundEnd'; outcome: RoundOutcome }
+    | { name: 'plant'; plantId: string }
     | { name: 'pin' }
     | { name: 'parents' };
 
@@ -36,7 +38,7 @@
 {:else if screen.name === 'setupPin'}
   <SetupPin onDone={toGarden} />
 {:else if screen.name === 'garden'}
-  <Garden onStart={startRound} onParents={() => (screen = { name: 'pin' })} onPlant={(p) => (selected = p)} onSeed={() => {}} />
+  <Garden onStart={startRound} onParents={() => (screen = { name: 'pin' })} onPlant={(p) => (selected = p)} onSeed={(plantId) => (screen = { name: 'plant', plantId })} />
   {#if selected}
     <PlantSheet
       plant={selected}
@@ -54,7 +56,15 @@
     onAbort={toGarden}
   />
 {:else if screen.name === 'roundEnd'}
-  <RoundEnd outcome={screen.outcome} vibration={app.data.settings.vibration} onDone={toGarden} />
+  <RoundEnd
+    outcome={screen.outcome}
+    vibration={app.data.settings.vibration}
+    onDone={toGarden}
+    onPlant={(plantId) => (screen = { name: 'plant', plantId })}
+  />
+{:else if screen.name === 'plant'}
+  <!-- Garden stays unmounted here: this screen commits state, so its canvas must not sway. -->
+  <PlantingScreen plantId={screen.plantId} vibration={app.data.settings.vibration} onDone={toGarden} />
 {:else if screen.name === 'pin'}
   <PinGate onSuccess={() => (screen = { name: 'parents' })} onCancel={toGarden} />
 {:else}
