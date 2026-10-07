@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import type { PlantRecord, Row, Slot } from '../lib/types';
   import { colsFor, drawOrder, freeSlots, GARDEN_H, gardenWidth, ROWS, slotGeometry, slotKey } from './layout';
+  import { TASK_TYPES } from '../tasks/registry';
   import { SCENE } from './palette';
   import { VIEW } from './plant';
   import PlantSvg from './PlantSvg.svelte';
@@ -21,6 +22,8 @@
   const MOUND_W = 60;
   const PLANT_W = 90;
   const MIN_HIT = 44;
+  // Slot buttons sit above every plant and mound, otherwise front-row plant boxes cover back-row slots.
+  const SLOT_Z = 10000;
 
   const cols = $derived(colsFor(plants.length));
   const width = $derived(gardenWidth(cols));
@@ -51,7 +54,7 @@
   function hitStyle(s: Slot): string {
     const { x, baseY, scale } = slotGeometry(s);
     const w = Math.max(MIN_HIT, MOUND_W * scale);
-    return `left:${x - w / 2}px;top:${baseY - MIN_HIT / 2}px;width:${w}px;height:${MIN_HIT}px;z-index:${z(s)}`;
+    return `left:${x - w / 2}px;top:${baseY - MIN_HIT / 2}px;width:${w}px;height:${MIN_HIT}px;z-index:${SLOT_Z + z(s)}`;
   }
 
   let scroller: HTMLDivElement;
@@ -76,11 +79,11 @@
     {#each placed as p (p.id)}
       {@const slot = p.slot!}
       {#if onPlant}
-        <button class="plant" class:grow={growing === p.id} class:pracht={p.pracht} type="button" style={plantStyle(slot)} onclick={() => onPlant(p)} aria-label="Pflanze ansehen">
+        <button class="plant" class:grow={growing === p.id} class:pracht={p.pracht} type="button" style={plantStyle(slot)} onclick={() => onPlant(p)} aria-label="Pflanze ansehen, {TASK_TYPES[p.taskType].label}, Stufe {p.stage}">
           <PlantSvg plant={p} {sway} />
         </button>
       {:else}
-        <div class="plant" class:grow={growing === p.id} class:pracht={p.pracht} style={plantStyle(slot)}>
+        <div class="plant" class:inert={!!onSlot} class:grow={growing === p.id} class:pracht={p.pracht} style={plantStyle(slot)}>
           <PlantSvg plant={p} {sway} />
         </div>
       {/if}
@@ -96,7 +99,7 @@
     {#if onSlot}
       {#each allSlots as s (slotKey(s))}
         {#if free.has(slotKey(s))}
-          <button class="slot" type="button" style={hitStyle(s)} onclick={() => onSlot(s)} aria-label="Freier Platz"></button>
+          <button class="slot" type="button" style={hitStyle(s)} onclick={() => onSlot(s)} aria-label="Freier Platz Reihe {s.row + 1}, Stelle {s.col + 1}"></button>
         {/if}
       {/each}
     {/if}
@@ -110,6 +113,8 @@
   .mound { position: absolute; display: block; height: auto; pointer-events: none; }
   .plant { position: absolute; display: block; padding: 0; border: 0; background: none; transform-origin: 50% 96%; }
   button.plant { cursor: pointer; }
+  /* Planting mode: plants must not swallow taps meant for free slots behind them. */
+  .plant.inert { pointer-events: none; }
   .plant.grow { animation: grow 0.9s ease-out; }
   .plant.grow.pracht { animation-duration: 1.4s; }
   @keyframes grow { from { transform: scale(0.1); } to { transform: scale(1); } }
