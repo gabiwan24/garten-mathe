@@ -21,3 +21,5 @@
 2026-10-07 – Golden seed for a Prachtpflanze – the reward is visible before planting while stage and species stay secret
 2026-10-07 – Planting screen renders the garden without sway – it commits while mounted, which would break the router invariant (swayLoop captures DOM joints once)
 2026-10-07 – Schema v2 migration distributes existing plants over the rows (slotForIndex) – old gardens fill all three rows instead of one
+2026-10-07 – Pending-seed banner sits above the footer under the garden instead of at the top – keeps the header calm and the banner next to the Weiter button
+2026-10-07 – No falling-seed animation: after confirm the plant grows directly from the soil – keeps it short and simple

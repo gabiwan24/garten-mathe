@@ -31,7 +31,7 @@
 </script>
 
 <svg bind:this={svg} class="plant" viewBox="0 0 {VIEW.w} {VIEW.h}" role="img" aria-label="Pflanze">
-  {#key root}<PlantNodeView node={root} />{/key}
+  {#key `${plant.seed}|${plant.family}|${plant.stage}|${plant.pracht}`}<PlantNodeView node={root} />{/key}
 </svg>
 
 <style>

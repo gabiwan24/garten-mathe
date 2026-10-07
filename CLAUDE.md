@@ -24,7 +24,7 @@ Vite 8 + Svelte 5 (runes) + TypeScript 6, vite-plugin-pwa, Vitest 5; no backend,
 - Router invariant: Garden must be unmounted whenever state is committed (round, round end, parents) — swayLoop captures the plant DOM joints once at mount.
 - Planting screen commits while mounted, so it must render the garden with `sway={false}`.
 - vite.config.ts sets css.postcss to {} on purpose: a parent folder has a Tailwind/PostCSS config that Vite would otherwise pick up.
-- Spec: docs/superpowers/specs/2026-10-06-garten-mathe-design.md · Plan: docs/superpowers/plans/2026-10-06-garten-mathe-m1.md
+- Spec: docs/superpowers/specs/2026-10-06-garten-mathe-design.md · Plan: docs/superpowers/plans/2026-10-06-garten-mathe-m1.md · Planting: docs/superpowers/plans/2026-10-07-planting-wide-garden.md
 
 ## Compact instructions
 Preserve: current goal, changed files + why, open TODOs, unresolved errors verbatim, start/port setup.

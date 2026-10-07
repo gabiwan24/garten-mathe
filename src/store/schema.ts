@@ -23,7 +23,7 @@ export function defaultState(): AppState {
 type Migration = (s: Record<string, unknown>) => Record<string, unknown>;
 // Key n migrates a version-n object to version n+1. Add entries when SCHEMA_VERSION grows.
 const MIGRATIONS: Record<number, Migration> = {
-  // 1→2: plants get grid slots; existing plants are spread evenly so the garden looks the same size as before.
+  // 1→2: plants get grid slots; existing plants are distributed over the three rows, filling columns left to right (slotForIndex).
   1: (s) => ({
     ...s,
     schemaVersion: 2,

@@ -23,4 +23,4 @@ Open: phone test, then merge.
 - Focus uses array order, not planting order
 - Non-pracht vibrate pattern (planting) not observable in a desktop browser
 - Plants are narrow, so young sprouts look sparse in the wide garden
-- Older minor items: sway re-entry snap, PlantSheet lacks aria-modal/Escape, "10 Aufgaben" hard-coded, PIN stored in plain text
+- Older minor items: sway re-entry snap, PlantSheet lacks aria-modal/Escape, "10 Aufgaben" hard-coded, PIN in plain text, `.extra` 46 px keypad jump during praise, `:global(body)` placement, decompose ms includes shake wait, wobbly list uses cumulative `wrong`, trend ignores level changes, generic conversation tip, all Nunito woff subsets precached

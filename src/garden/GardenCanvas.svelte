@@ -111,10 +111,13 @@
 </div>
 
 <style>
-  .scroller { overflow-x: auto; overflow-y: hidden; touch-action: pan-x; scrollbar-width: none; margin: 0 -16px; }
+  .scroller { position: relative; z-index: 0; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; scrollbar-width: none; margin: 0 -16px; }
   .scroller::-webkit-scrollbar { display: none; }
   .world { position: relative; height: 100%; }
   .mound { position: absolute; display: block; height: auto; pointer-events: none; }
+  /* Only painted pixels take taps, so a back plant is not blocked by the empty box of a front neighbour. */
+  button.plant { pointer-events: none; }
+  .plant :global(svg *) { pointer-events: visiblePainted; }
   .plant { position: absolute; display: block; padding: 0; border: 0; background: none; transform-origin: 50% 96%; }
   button.plant { cursor: pointer; }
   /* Planting mode: plants must not swallow taps meant for free slots behind them. */

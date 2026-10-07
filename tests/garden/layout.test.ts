@@ -86,13 +86,15 @@ describe('focusSlot', () => {
     const plants = [at(1, { row: 0, col: 4 })];
     expect(focusSlot(plants)!.col).toBeGreaterThanOrEqual(4);
   });
-  it('never returns an occupied slot when the tail is full', () => {
-    const cols = colsFor(40);
+  it('falls back to the first free slot overall when the last columns are full', () => {
+    // 12 plants -> colsFor(12) = 8 columns; columns 6 and 7 are completely full, columns 0 and 1 too.
     const plants: PlantRecord[] = [];
-    // Fill the last columns completely, leave the earlier ones empty.
-    for (let c = cols - 4; c < cols; c++) for (let r = 0; r < ROWS; r++) plants.push(at(plants.length, { row: r as Row, col: c }));
+    for (const c of [0, 1, 6, 7]) for (let r = 0; r < ROWS; r++) plants.push(at(plants.length, { row: r as Row, col: c }));
+    expect(plants.length).toBe(12);
+    expect(colsFor(12)).toBe(8);
     const s = focusSlot(plants)!;
-    expect(s).not.toBeNull();
     expect(isFree(plants, s)).toBe(true);
+    expect(s).toEqual(freeSlots(plants)[0]);
+    expect(s).toEqual({ row: 0, col: 2 });
   });
 });
