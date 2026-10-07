@@ -12,7 +12,8 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--sky); overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 body { touch-action: manipulation; user-select: none; }
-#app { min-height: 100dvh; max-width: 480px; margin: 0 auto; padding: 0 16px; }
+/* Top inset keeps content clear of a camera cut-out now that the status bar is hidden. */
+#app { min-height: 100dvh; max-width: 480px; margin: 0 auto; padding: env(safe-area-inset-top) 16px 0; }
 button { font: inherit; color: inherit; cursor: pointer; }
 .big {
   display: block; width: 100%; min-height: 64px; border: 0; border-radius: 20px;

@@ -15,6 +15,10 @@ export interface TaskResult {
   ms: number;
 }
 
+export type Row = 0 | 1 | 2;
+/** Position in the garden grid: row 0 = back, 2 = front. */
+export interface Slot { row: Row; col: number }
+
 export interface ItemStat { box: Box; wrong: number; lastSeen: string }
 
 export interface PlantRecord {
@@ -25,6 +29,8 @@ export interface PlantRecord {
   stage: PlantStage;
   pracht: boolean;
   date: string;
+  /** null = seed not planted yet. */
+  slot: Slot | null;
 }
 
 export interface RoundRecord { date: string; taskType: TaskTypeId; firstTry: number; total: number; ms: number }

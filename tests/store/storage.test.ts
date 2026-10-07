@@ -14,7 +14,7 @@ class BrokenStorage implements StorageLike {
 
 function withPlant(id: string) {
   const s = defaultState();
-  s.plants.push({ id, seed: 1, family: 'flower', taskType: 'decompose', stage: 3, pracht: false, date: '2026-10-06' });
+  s.plants.push({ id, seed: 1, family: 'flower', taskType: 'decompose', stage: 3, pracht: false, date: '2026-10-06', slot: null });
   return s;
 }
 

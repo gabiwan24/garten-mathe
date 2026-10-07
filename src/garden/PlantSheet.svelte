@@ -23,8 +23,8 @@
 </div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; border: 0; background: rgba(31, 42, 68, 0.35); }
-  .sheet { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(480px, 100%); display: grid; gap: 10px; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--sky); border-radius: 24px 24px 0 0; text-align: center; }
+  .backdrop { position: fixed; inset: 0; z-index: 10; border: 0; background: rgba(31, 42, 68, 0.35); }
+  .sheet { position: fixed; z-index: 11; left: 50%; bottom: 0; transform: translateX(-50%); width: min(480px, 100%); display: grid; gap: 10px; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--sky); border-radius: 24px 24px 0 0; text-align: center; }
   .preview { width: 40%; justify-self: center; }
   p { margin: 0; font-size: 18px; }
   .type { font-size: 22px; font-weight: 800; color: var(--navy); }

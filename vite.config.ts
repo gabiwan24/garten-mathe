@@ -19,7 +19,9 @@ export default defineConfig({
         lang: 'de',
         start_url: '.',
         scope: '.',
-        display: 'standalone',
+        // Fullscreen hides the Android status bar; standalone is the fallback if a device refuses it.
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
         orientation: 'portrait',
         background_color: '#E4EFEA',
         theme_color: '#4E9A5B',
