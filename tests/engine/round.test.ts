@@ -13,7 +13,7 @@ function results(firstTry: number, opts: { helpOnFirst?: boolean } = {}): TaskRe
   }));
 }
 const plant = (over: Partial<PlantRecord> = {}): PlantRecord =>
-  ({ id: 'p1', seed: 1, family: 'fruit', taskType: 'fillTen', stage: 3, pracht: false, date: '2026-10-01', ...over });
+  ({ id: 'p1', seed: 1, family: 'fruit', taskType: 'fillTen', stage: 3, pracht: false, date: '2026-10-01', slot: null, ...over });
 
 describe('plantOutcome', () => {
   it('maps the first-try share to stages', () => {
@@ -70,6 +70,16 @@ describe('finishRound', () => {
     expect(o.watered).toBe(true);
     expect(o.plant).toMatchObject({ id: 'old', stage: 3 });
     expect(o.state.rounds).toHaveLength(1);
+  });
+  it('a new plant starts as an unplanted seed', () => {
+    expect(finishRound(defaultState(), round(results(6)), '2026-10-06', 'x').plant.slot).toBeNull();
+  });
+  it('a watering round keeps the watered plant slot', () => {
+    const s = defaultState();
+    s.plants.push(plant({ id: 'old', stage: 2, slot: { row: 1, col: 4 } }));
+    const o = finishRound(s, round(results(3), 'old'), '2026-10-06', 'new');
+    expect(o.state.plants[0].slot).toEqual({ row: 1, col: 4 });
+    expect(o.plant.slot).toEqual({ row: 1, col: 4 });
   });
   it('a perfect watering round still never makes a Prachtpflanze', () => {
     const s = defaultState();

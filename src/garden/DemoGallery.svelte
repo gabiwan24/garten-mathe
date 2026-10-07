@@ -7,8 +7,8 @@
   const stages: PlantStage[] = [2, 3, 4, 5];
   const plants: PlantRecord[] = families.flatMap((family, f) =>
     [1, 2, 3].flatMap((seedBase) => [
-      ...stages.map((stage) => ({ id: `${family}-${seedBase}-${stage}`, seed: seedBase * 97 + f, family, taskType: 'decompose' as const, stage, pracht: false, date: '2026-10-06' })),
-      { id: `${family}-${seedBase}-p`, seed: seedBase * 97 + f, family, taskType: 'decompose' as const, stage: 5 as const, pracht: true, date: '2026-10-06' },
+      ...stages.map((stage) => ({ id: `${family}-${seedBase}-${stage}`, seed: seedBase * 97 + f, family, taskType: 'decompose' as const, stage, pracht: false, date: '2026-10-06', slot: null })),
+      { id: `${family}-${seedBase}-p`, seed: seedBase * 97 + f, family, taskType: 'decompose' as const, stage: 5 as const, pracht: true, date: '2026-10-06', slot: null },
     ]),
   );
 </script>

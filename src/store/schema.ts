@@ -1,6 +1,7 @@
+import { slotForIndex } from '../garden/layout';
 import type { AppState, PlantRecord, RoundRecord, Settings, TaskTypeId } from '../lib/types';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -21,7 +22,14 @@ export function defaultState(): AppState {
 
 type Migration = (s: Record<string, unknown>) => Record<string, unknown>;
 // Key n migrates a version-n object to version n+1. Add entries when SCHEMA_VERSION grows.
-const MIGRATIONS: Record<number, Migration> = {};
+const MIGRATIONS: Record<number, Migration> = {
+  // 1→2: plants get grid slots; existing plants are spread evenly so the garden looks the same size as before.
+  1: (s) => ({
+    ...s,
+    schemaVersion: 2,
+    plants: (Array.isArray(s.plants) ? s.plants : []).map((p, i) => ({ ...(p as object), slot: slotForIndex(i) })),
+  }),
+};
 
 export function migrate(raw: unknown): AppState {
   if (!isRecord(raw) || typeof raw.schemaVersion !== 'number') throw new Error('Invalid state');
@@ -48,7 +56,8 @@ function withDefaults(s: Record<string, unknown>): AppState {
     levels: { ...d.levels, ...rec(s.levels) } as AppState['levels'],
     history: { ...d.history, ...rec(s.history) } as AppState['history'],
     items: rec(s.items) as AppState['items'],
-    plants: (Array.isArray(s.plants) ? s.plants : []) as PlantRecord[],
+    // A plant without a slot is an unplanted seed.
+    plants: (Array.isArray(s.plants) ? s.plants : []).map((p) => (isRecord(p) ? { ...p, slot: p.slot ?? null } : p)) as PlantRecord[],
     rounds: (Array.isArray(s.rounds) ? s.rounds : []) as RoundRecord[],
     lastTaskType,
   };

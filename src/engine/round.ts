@@ -58,7 +58,7 @@ export function finishRound(state: AppState, round: FinishedRound, date: string,
     plants = state.plants.map((p) => (p.id === target.id ? plant : p));
   } else {
     const { stage, pracht } = plantOutcome(firstTry, total);
-    plant = { id: plantId, seed: round.seed, family: TASK_TYPES[type].family, taskType: type, stage, pracht, date };
+    plant = { id: plantId, seed: round.seed, family: TASK_TYPES[type].family, taskType: type, stage, pracht, date, slot: null };
     plants = [...state.plants, plant];
   }
 
