@@ -284,3 +284,26 @@ Am Zwanzigerfeld (2 Reihen à 10), geführt in 3 Schritten:
   - Überrechtfertigungseffekt (Deci/Koestner/Ryan 1999, Lepper 1973)
   - Protégé-Effekt
   - manipulative Designs in Kinder-Apps (Radesky 2022)
+
+## 12. Erweiterung (2026-10-07): Selbst einpflanzen und breiter Garten
+
+Wunsch nach dem ersten Handy-Test: Nach einer Runde pflanzt das Kind den Samen selbst in die Erde und wählt die Position. Der Garten lässt sich links/rechts wischen, wenn er voll wird, und darf sehr dicht bepflanzt werden.
+
+### Garten-Raster
+- **3 Reihen** (0 = hinten, 2 = vorne) mit eng liegenden Erdstellen (Abstand ca. 56 px bei Maßstab 1; eine Pflanze ist ca. 85 px breit, Überlappung ist gewollt). Die Reihen sind seitlich versetzt.
+- **Tiefe:** Maßstab hinten 0,70, Mitte 0,85, vorne 1,00. Zeichenreihenfolge: Reihe aufsteigend, innerhalb der Reihe Spalte aufsteigend (vorne verdeckt hinten).
+- **Breite wächst mit:** Spaltenzahl = max(7, ceil((Pflanzenzahl + 12) / 3)), also immer mindestens 12 freie Erdstellen. Der Garten wird nach rechts breiter.
+- **Wischen:** nur horizontal. Himmel, Sonne, Wolken und Wiese bleiben fest stehen, Kopfzeile und Fußleiste ebenfalls. Beim Öffnen zeigt der Garten die zuletzt eingepflanzte Stelle (sonst den Anfang).
+- Jede Erdstelle ist sichtbar als Erdhügel, auch leere. Tippziele sind mindestens 44 px groß.
+
+### Einpflanzen
+1. Am Ende einer normalen Runde wird die neue Pflanze sofort gespeichert, aber **ohne Position** (Samen im Beutel). Gieß-Runden ändern nichts am Ablauf: Es wächst nur die gegossene Pflanze, ein Samen kommt nicht dazu.
+2. Rundenende-Bildschirm: Ergebnis plus ein **Samen**. Bei einer Prachtpflanze ist der Samen golden. Welche Pflanze es wird, bleibt bis zum Einpflanzen geheim. Knopf „Samen einpflanzen“.
+3. Einpflanz-Bildschirm: der breite Garten ohne Neigen, freie Erdstellen blinken leicht. Ein Tipp auf eine freie Stelle **markiert** sie (Samen erscheint dort). Ein anderer Tipp verschiebt die Markierung. Der Knopf „Hier einpflanzen“ bestätigt (Schutz vor Fehltipps in dem dichten Raster).
+4. Nach dem Bestätigen fällt der Samen, ein kurzes Klacken (Vibration), die Pflanze wächst aus der Erde. Prachtpflanzen länger und mit längerem Vibrationsmuster. Danach „Zum Garten“.
+5. **Der Samen geht nie verloren:** Eine Pflanze ohne Position ist ein offener Samen. Der Garten zeigt oben einen Knopf „Du hast noch einen Samen“. Der älteste offene Samen kommt zuerst.
+
+### Datenmodell
+- `PlantRecord.slot: { row: 0 | 1 | 2; col: number } | null`. `null` = Samen im Beutel.
+- Schema-Version 2. Migration 1→2: vorhandene Pflanzen bekommen der Reihe nach Positionen (Index i → Reihe i % 3, Spalte floor(i / 3)). Backups aus Version 1 laden weiter.
+- Eine Erdstelle fasst höchstens eine Pflanze.
