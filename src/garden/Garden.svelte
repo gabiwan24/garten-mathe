@@ -87,7 +87,7 @@
 </div>
 
 <style>
-  .garden { display: flex; flex-direction: column; height: 100dvh; }
+  .garden { display: flex; flex-direction: column; height: calc(100dvh - env(safe-area-inset-top)); }
   header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 0; }
   h1 { margin: 0; font-size: 28px; font-weight: 800; color: var(--navy); }
   .gear { width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--cream); font-size: 24px; position: relative; }
