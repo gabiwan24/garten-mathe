@@ -114,7 +114,7 @@
 
     function buildPad() {
       const slots = h('div', 'zg-ans'); inp.appendChild(slots);
-      const draw = () => { const n = String(step().answer).length; let s = ''; for (let i = 0; i < Math.max(1, n); i++) s += `<div class="zg-slot${entry[i] != null ? ' f' : ''}">${entry[i] != null ? entry[i] : ''}</div>`; slots.innerHTML = s; };
+      const draw = () => { slots.innerHTML = `<div class="zg-slot one${entry ? ' f' : ''}">${entry}</div>`; }; // one field, same width for 1 or 2 digits (does not hint how long the answer is)
       draw();
       const pad = h('div', 'zg-pad');
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].forEach(k => {
