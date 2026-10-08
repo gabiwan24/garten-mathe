@@ -166,6 +166,9 @@
 .zg-btn:disabled { opacity: .45; cursor: default; }
 .zg-section { margin: 0; font-size: var(--t-2); font-weight: var(--w-2); text-align: left; }
 
+/* ---------- a picture above the keypad: keypad in two rows ---------- */
+.zg-dense .zg-pad { grid-template-columns: repeat(6, 1fr); width: 100%; }
+
 /* ---------- short phones (about 640-720 px high): tighter sizes so the whole question incl. the keypad fits without scrolling ---------- */
 @media (max-height: 720px) {
   .zg { --t-4: 28px; --size-key: 48px; --size-slot-h: 48px; --size-ink-h: clamp(120px, 21dvh, 200px); }
@@ -174,6 +177,7 @@
   .zg-card { padding: var(--s-3) var(--s-4); gap: var(--s-2); }
   .zg-input { gap: var(--s-3); }
   .zg-pad { grid-template-columns: repeat(6, 1fr); width: 100%; }
+  .zg-frame { height: calc(var(--size-key) * 2.5); }
   .zg-msg { min-height: calc(var(--t-1) * var(--lh) * 2); font-size: var(--t-1); }
   .zg-bar { padding-top: var(--s-2); }
   .zg-wall, .zg-wall-row { gap: var(--s-1); }

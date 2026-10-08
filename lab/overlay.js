@@ -33,7 +33,7 @@
         const frame = Math.floor(i / 10), j = i % 10, cx = 16 + (j % 5) * 32, cy = 16 + Math.floor(j / 5) * 32 + frame * 76, cls = i < v.a ? 'a' : i < v.a + v.b ? 'b' : 'o';
         g += `<circle class="zg-d ${cls}" cx="${cx}" cy="${cy}" r="13"/>`;
       }
-      return `<svg class="zg-svg" viewBox="0 0 160 148" width="176" height="163">${g}</svg>`;
+      return `<svg class="zg-svg zg-frame" viewBox="0 0 160 148" width="176" height="163">${g}</svg>`;
     }
     if (v.kind === 'line') {
       const n = v.to - v.from, W = 520, pad = 30, dx = (W - 2 * pad) / n, y = 78, drag = step.input === 'line', H = v.start != null ? 140 : 110; let s = `<svg class="zg-svg${drag ? ' zg-drag' : ''}" viewBox="0 0 ${W} ${H}" data-pad="${pad}" data-dx="${dx}" data-n="${n}" data-from="${v.from}" data-y="${y}" data-start="${drag && v.start != null ? v.start - v.from : 0}">`;
@@ -57,7 +57,7 @@
     }
     return '';
   }
-  const TIP = { pairs10: 'Wie viele fehlen bis zur vollen Zehn?', plus: 'Mach erst die 10 voll. Dann den Rest dazu.', minus: 'Geh erst bis zur 10 zurück. Dann den Rest.', gap: 'Probiere eine Zahl aus und rechne nach.', line: 'Hüpfe Schritt für Schritt.', wall: 'Zwei Steine nebeneinander ergeben den Stein darüber.', double: 'Doppelt heißt: zweimal dieselbe Zahl.', compare: 'Rechne zuerst beide Seiten aus.', story: 'Male dir die Geschichte im Kopf.', pattern: 'Schau, wie viel jedes Mal dazukommt.', tenmath: 'Die 10 ist dein Helfer.' };
+  const TIP = { pairs10: 'Wie viele fehlen bis zur vollen Zehn?', plus: 'Mach erst die 10 voll. Dann den Rest dazu.', minus: 'Geh erst bis zur 10 zurück. Dann den Rest.', gap: 'Probiere eine Zahl aus und rechne nach.', line: 'Hüpfe Schritt für Schritt.', wall: 'Zwei Steine nebeneinander ergeben den Stein darüber.', double: 'Doppelt heißt: zweimal dieselbe Zahl.', compare: 'Rechne zuerst beide Seiten aus.', story: 'Male dir die Geschichte im Kopf.', pattern: 'Schau, wie viel jedes Mal dazukommt.', tenmath: 'Die 10 ist dein Helfer.', count: 'Eine volle Reihe sind 5. Ein volles Feld sind 10.', family: 'Die drei Zahlen bleiben gleich. Nur die Reihenfolge ändert sich.' };
 
   /* ---------- the overlay itself ---------- */
   function open(hue) { const el = h('div', 'zg'); el.style.setProperty('--h', hue); document.body.appendChild(el); return el; }
@@ -83,13 +83,14 @@
       drawProg(); const t = task(), s = step();
       ctx.textContent = nb(t.ctx); prompt.textContent = nb(s.prompt.replace(/ ○ /, '  ?  '));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
-      vis.innerHTML = s.visual && s.visual.kind !== 'tenframe' ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help: they would give the answer away
+      vis.innerHTML = s.visual && (s.visual.kind !== 'tenframe' || s.visual.show) ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help (they would give the answer away), unless the picture IS the task
       ballReset = null; if (s.input === 'line') attachBall(vis.querySelector('.zg-svg'), v => submit(String(v)));
       inp.innerHTML = ''; inp.hidden = false;
       if (s.input === 'cmp') { const c = h('div', 'zg-choices'); s.choices.forEach((ch, i) => { const b = h('button', 'zg-key', ch); b.onclick = () => submit(String(i)); c.appendChild(b); }); inp.appendChild(c); }
       else if (s.input === 'line') inp.hidden = true;
       else if (useInk && s.input === 'num') buildInk(s);
       else buildPad();
+      root.classList.toggle('zg-dense', !!vis.innerHTML.trim() && s.input === 'num'); // picture + keypad: two-row keypad so nothing scrolls
       altBtn.hidden = !(node.write && window.Ink && s.input === 'num');
       altBtn.innerHTML = useInk ? `${ico('keyboard')} Lieber tippen` : `${ico('pen')} Schreiben`;
     }
@@ -167,7 +168,7 @@
       help = true; const s = step();
       const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); // the jump arc is a help, not part of the question
       if (!vis.innerHTML.trim() && s.visual) vis.innerHTML = visualHTML(s.visual, s);
-      else if (!vis.innerHTML.trim()) vis.innerHTML = `<div class="zg-tip-line">${ico('help')} ${TIP[task().type] || 'Denk in kleinen Schritten.'}</div>`;
+      else if (!vis.querySelector('.zg-tip-line')) vis.insertAdjacentHTML('beforeend', `<div class="zg-tip-line">${ico('help')} ${TIP[task().type] || 'Denk in kleinen Schritten.'}</div>`);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;

@@ -82,6 +82,17 @@ let prev = ''; for (let i = 0; i < 400; i++) { const p = T.praise({ wrong: i % 3
 const againSet = new Set(T.PRAISE.again), helpSet = new Set(T.PRAISE.help);
 if (!againSet.has(T.praise({ wrong: 1, help: false, ink: false, type: 'plus' }, ''))) bad('wrong-then-right gets the "again" praise');
 if (!helpSet.has(T.praise({ wrong: 0, help: true, ink: false, type: 'plus' }, ''))) bad('help gets the "help" praise');
+// audit rules 2026-10-09: everything stays within 0..20, story verbs fit, patterns vary, ten-maths steps belong together
+{ const R = s => { let x = s; const n = () => { x = (x * 1103515245 + 12345) & 0x7fffffff; return x / 0x7fffffff; }; return { int: (a, b) => a + Math.floor(n() * (b - a + 1)), chance: p => n() < p, pick: a => a[Math.floor(n() * a.length)] }; };
+  const pat4 = new Set();
+  for (const ty of Object.keys(T.GEN)) for (let L = 1; L <= 4; L++) for (let i = 0; i < 300; i++) { const t = T.GEN[ty](L, R(i * 31 + L * 7 + ty.length));
+    for (const s of t.steps) { const nums = (t.ctx + ' ' + s.prompt).match(/\d+/g) || []; for (const v of nums.map(Number).concat(typeof s.answer === 'number' && s.input !== 'cmp' ? [s.answer] : [])) if (v > 20 || v < 0) bad(`${ty} L${L} outside 0..20: ${t.ctx} ${s.prompt} -> ${s.answer}`); }
+    if (ty === 'story' && /Beeren|Tautropfen|Blüten/.test(t.ctx) && /fliegen/.test(t.ctx)) bad('story verb does not fit: ' + t.ctx);
+    if (ty === 'pattern' && L === 4) pat4.add(t.steps[0].prompt);
+    if (ty === 'tenmath' && L === 4 && t.steps[0].answer + 10 !== t.steps[1].answer) bad('ten maths steps unrelated: ' + t.steps.map(s => s.prompt).join(' / '));
+    if (ty === 'line' && L === 3 && t.steps[0].input !== 'line') bad('neighbour task must be dragged');
+    if (ty === 'family' && new Set(t.steps.map(s => s.answer)).size < 2) bad('family needs two different numbers'); }
+  if (pat4.size < 10) bad('pattern level 4 repeats itself: ' + pat4.size + ' different'); }
 // determinism
 const a = JSON.stringify(T.makeRound(5, 123)), b = JSON.stringify(T.makeRound(5, 123)); if (a !== b) bad('rounds not deterministic');
 

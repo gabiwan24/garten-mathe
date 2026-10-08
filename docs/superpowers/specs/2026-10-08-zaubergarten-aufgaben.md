@@ -46,7 +46,7 @@ Der Zaubergarten schläft im Dunkeln. Jede geübte Aufgabe lässt eine Wegmarke 
 | 13 | Winkel | Größer oder kleiner? | Tastatur / Antippen |
 | 14 | Dreieck | Zahlenmauer | Finger schreibt |
 | 15 | Pfeile | Zahlenstrahl | Tastatur / Antippen |
-| 16 | Mischpfeile | Zaubermix | Tastatur / Antippen |
+| 16 | Auge | Wie viele Punkte? (Zwanzigerfeld sichtbar) | Tastatur / Antippen |
 
 **Garten 3 · Margeriten-Hain (Stufe 3)**
 
@@ -59,7 +59,7 @@ Der Zaubergarten schläft im Dunkeln. Jede geübte Aufgabe lässt eine Wegmarke 
 | 21 | Quadrat | Welche Zahl fehlt? | Finger schreibt |
 | 22 | Pfeile | Zahlenstrahl | Tastatur / Antippen |
 | 23 | Buch | Gartengeschichten | Tastatur / Antippen |
-| 24 | Mischpfeile | Zaubermix | Finger schreibt |
+| 24 | Tauschpfeile | Aufgabenfamilie (Tausch- und Umkehraufgabe) | Finger schreibt |
 
 **Garten 4 · Glockental (Stufe 4)**
 
@@ -130,3 +130,5 @@ Der Zaubergarten schläft im Dunkeln. Jede geübte Aufgabe lässt eine Wegmarke 
 - Die bisherigen App-Aufgaben (Zerlegen bis 10, Zehnerfeld) bleiben als leichte Stufe 0 erhalten.
 
 **Menü und Name:** Zwei runde Knöpfe oben rechts: Ton an/aus (immer sichtbar, Zustand wird gemerkt) und Menü für Erwachsene (Name ändern, alle Bestwerte; Entwickler-Regler und Fortschritt löschen erscheinen erst nach 4 Tippen auf das Wort „Erwachsene“, löschen braucht ein zweites Tippen). Beim ersten Start fragt eine Karte „Wie heißt du?"; der Name steht in den Bestwert-Tabellen und im Abschluss („Gartenmeister, Name!").
+
+**Überprüfung 2026-10-09:** Alle Zahlen bleiben in 0–20 (auch Muster und Mauer-Spitze), Verben der Geschichten passen zum Gegenstand, Zahlenmauer Stufe 3 ohne Gleichung lösbar, „Mit der 10" Stufe 4 als zusammenhängender Rechenweg (14 + 5: erst 4 + 5, dann 10 + 9), Nachbarzahlen per Kugel, wechselnde Muster in Stufe 4. Neu: „Wie viele Punkte?" (Mengen im Zwanzigerfeld erfassen, ohne Zeitlimit) und „Aufgabenfamilie". Geprüft in `lab/tests/tasks.test.mjs`.

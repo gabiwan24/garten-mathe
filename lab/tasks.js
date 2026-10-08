@@ -104,8 +104,8 @@
       return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from, to, labels: [from, to] }, explain: `Hier liegt die ${n}.` }], { max: to }); }
     if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(7, 18 - a)), from = r.int(Math.max(0, a + b - 8), Math.min(10, a - 1)), to = from + 10;
       return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
-    if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5), from = r.int(Math.max(0, n - 9), Math.min(n - 1, 10));
-      return task('line', '', [num(before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, before ? n - 1 : n + 1, { explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from, to: from + 10, labels: [n] } })], { max: n + 1 }); }
+    if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5), from = r.int(Math.max(0, n - 9), Math.min(n - 2, 10)); // the ball starts at 'from', which is never the answer
+      return task('line', 'Ziehe die Kugel auf die Nachbarzahl.', [{ prompt: before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, answer: before ? n - 1 : n + 1, input: 'line', explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from, to: from + 10, labels: [n] } }], { max: n + 1 }); }
     const half = r.int(2, 4), a = r.int(6, 12), b = a + 2 * half, from = r.int(Math.max(0, b - 10), Math.min(a, 10)); // b >= 10
     return task('line', 'Finde die Mitte.', [num(`Welche Zahl liegt genau in der Mitte von ${a} und ${b}?`, a + half, { explain: `Von ${a} bis ${b} sind es ${2 * half} Schritte, die Hälfte ist ${half}: ${a + half}.`, visual: { kind: 'line', from, to: from + 10, labels: [a, b] } })], { max: b });
   };
@@ -119,8 +119,11 @@
         step('Mitte links?', m1, [`${a}+${b}`, '?'], `${a} + ${b} = ${m1}.`, { kind: 'wall', rows: [[a, b, c], [null, null], [null]], cur: [1, 0] }),
         step('Mitte rechts?', m2, [`${b}+${c}`, '?'], `${b} + ${c} = ${m2}.`, { kind: 'wall', rows: [[a, b, c], [m1, null], [null]], cur: [1, 1] }),
         step('Ganz oben?', m1 + m2, [`${m1}+${m2}`, '?'], `${m1} + ${m2} = ${m1 + m2}.`, { kind: 'wall', rows: [[a, b, c], [m1, m2], [null]], cur: [2, 0] })], { max: m1 + m2 }); }
-    if (L === 3) { const a = r.int(2, 6), x = r.int(3, 7), c = r.int(2, 6), t = a + 2 * x + c;
-      return task('wall', 'Ein Stein unten fehlt.', [step('Welche Zahl fehlt unten in der Mitte?', x, [`${a}+2*?+${c}`, String(t)], `Oben ${t}: ${a} + ${x} + ${x} + ${c} = ${t}.`, { kind: 'wall', rows: [[a, null, c], [null, null], [t]], cur: [0, 1] })], { max: t }); }
+    if (L === 3) { let a, x, c; do { a = r.int(2, 6); x = r.int(3, 7); c = r.int(2, 6); } while (a + 2 * x + c > 20); const m1 = a + x, m2 = x + c, t = m1 + m2; // the top stays within 20
+      return task('wall', 'Ein Stein unten fehlt.', [
+        step('Welche Zahl fehlt unten in der Mitte?', x, [`${a}+?`, String(m1)], `${a} + ${x} = ${m1}.`, { kind: 'wall', rows: [[a, null, c], [m1, null], [null]], cur: [0, 1] }),
+        step('Mitte rechts?', m2, [`${x}+${c}`, '?'], `${x} + ${c} = ${m2}.`, { kind: 'wall', rows: [[a, x, c], [m1, null], [null]], cur: [1, 1] }),
+        step('Ganz oben?', t, [`${m1}+${m2}`, '?'], `${m1} + ${m2} = ${t}.`, { kind: 'wall', rows: [[a, x, c], [m1, m2], [null]], cur: [2, 0] })], { max: t }); }
     const b = r.int(3, 7), a = r.int(2, 7), c = r.int(2, 7), m1 = a + b, m2 = b + c;
     return task('wall', 'Zwei Steine unten fehlen.', [
       step('Welche Zahl fehlt unten links?', a, [`?+${b}`, String(m1)], `${m1} − ${b} = ${a}.`, { kind: 'wall', rows: [[null, b, null], [m1, m2], [m1 + m2]], cur: [0, 0] }),
@@ -133,7 +136,7 @@
     if (L === 3) { const a = r.int(6, 9), up = r.chance(0.5), b = up ? a + 1 : a - 1;
       return task('double', `${a} + ${b}: Fast ein Doppeltes!`, [
         num(`${a} + ${a} = ?`, 2 * a, { eq: [`${a}+${a}`, '?'], explain: `${a} + ${a} = ${2 * a}.` }),
-        num(`${up ? '+' : '−'} 1 ergibt ${unk}`, a + b, { eq: [up ? `${2 * a}+1` : `${2 * a}-1`, '?'], explain: `${up ? 'Plus' : 'Minus'} 1: ${a + b}.` })], { max: a + b }); }
+        num(`${2 * a} ${up ? '+' : '−'} 1 = ?`, a + b, { eq: [up ? `${2 * a}+1` : `${2 * a}-1`, '?'], explain: `${up ? 'Plus' : 'Minus'} 1: ${a + b}.` })], { max: a + b }); }
     const a = r.int(7, 10), c = r.int(1, 5);
     return task('double', 'Doppelte Zahl, dann ein Stück weg.', [num(`${a} + ${a} − ${c} = ?`, 2 * a - c, { eq: [`${a}+${a}-${c}`, '?'], explain: `${a} + ${a} = ${2 * a}, dann − ${c} = ${2 * a - c}.` })], { max: 2 * a });
   };
@@ -148,10 +151,11 @@
   };
 
   const HERO = [['Funki', 'er', 'Blüten'], ['Mia', 'sie', 'Tautropfen'], ['Igel Ino', 'er', 'Samen'], ['Eule Ella', 'sie', 'Beeren']];
+  const GONE = { Blüten: 'verwelken', Tautropfen: 'trocknen in der Sonne', Samen: 'fliegen mit dem Wind weg', Beeren: 'nascht ein Vogel' }; // what can really happen to each thing
   GEN.story = (L, r) => {
     const [n, p, o] = r.pick(HERO), P = p === 'er' ? 'Er' : 'Sie';
     if (L === 1) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(9, 20 - a)); return task('story', `${n} sammelt ${a} ${o}. Dann findet ${p} noch ${b}.`, [num('Wie viele sind es zusammen?', a + b, { eq: [`${a}+${b}`, '?'], explain: `${a} + ${b} = ${a + b}.` })], { max: a + b }); }
-    if (L === 2) { const a = r.int(12, 18), b = r.int(3, 9); return task('story', `${n} hat ${a} ${o}. ${b} davon fliegen weg.`, [num('Wie viele bleiben?', a - b, { eq: [`${a}-${b}`, '?'], explain: `${a} − ${b} = ${a - b}.` })], { max: a }); }
+    if (L === 2) { const a = r.int(12, 18), b = r.int(3, 9); return task('story', `${n} hat ${a} ${o}. ${b} davon ${GONE[o]}.`, [num('Wie viele bleiben?', a - b, { eq: [`${a}-${b}`, '?'], explain: `${a} − ${b} = ${a - b}.` })], { max: a }); }
     if (L === 3) { const a = r.int(11, 17); return task('story', `${n} braucht 20 ${o} für den Zaubertrank. Schon ${a} sind im Korb.`, [num('Wie viele fehlen noch?', 20 - a, { eq: [`${a}+?`, '20'], explain: `${a} + ${20 - a} = 20.` })], { max: 20 }); }
     const a = r.int(8, 12), b = r.int(4, 8), c = r.int(3, 7); return task('story', `${n} hat ${a} ${o}. Ein Freund bringt ${b} dazu. Dann verschenkt ${p} ${c}.`, [num('Wie viele hat ' + (p === 'er' ? 'er' : 'sie') + ' jetzt?', a + b - c, { eq: [`${a}+${b}-${c}`, '?'], explain: `${a} + ${b} = ${a + b}, dann − ${c} = ${a + b - c}.` })], { max: a + b });
   };
@@ -160,9 +164,12 @@
     const seq = (start, step, len, ans) => { const s = []; for (let i = 0; i < len; i++) s.push(start + i * step); return { shown: s.join(', '), next: start + len * step }; };
     let sq, mx;
     if (L === 1) { const d = r.pick([2, 2, 3]), st = r.int(2, 9); sq = seq(st, d, 3); }
-    else if (L === 2) { const dn = r.chance(0.5); sq = dn ? seq(20, -r.pick([2, 5]), 3) : seq(r.pick([5, 10]), 5, 3); if (sq.next < 0) sq = seq(2, 2, 3); }
+    else if (L === 2) { const k = r.int(0, 2); sq = k === 0 ? seq(20, -r.pick([2, 5]), 3) : k === 1 ? seq(r.pick([0, 5]), 5, 3) : seq(r.pick([4, 6, 8, 10, 12]), 2, 3); } // every number stays within 0..20
     else if (L === 3) { const st = r.pick([2, 3, 4]), d = r.pick([3, 4]); sq = seq(st, d, 4); }
-    else { const k = r.int(0, 1); if (k === 0) { const s = [1, 2, 4, 7]; sq = { shown: s.join(', '), next: 11 }; } else { sq = seq(r.pick([20, 19, 18]), -3, 4); } }
+    else { const k = r.int(0, 2);
+      if (k === 0) { const s0 = r.int(1, 9), s = [s0, s0 + 1, s0 + 3, s0 + 6]; sq = { shown: s.join(', '), next: s0 + 10 }; } // the step grows by one each time
+      else if (k === 1) { const s0 = r.int(2, 8), s = [s0, s0 + 2, s0 + 1, s0 + 3, s0 + 2]; sq = { shown: s.join(', '), next: s0 + 4 }; } // two forward, one back
+      else sq = seq(r.int(17, 20), -3, 4); }
     mx = Math.max(sq.next, 10);
     const first = sq.shown.split(', ').map(Number);
     return task('pattern', 'Welche Zahl kommt als Nächstes?', [num(`${sq.shown}, ${unk}`, sq.next, { explain: `Schau auf die Schritte: nächste Zahl ist ${sq.next}.` })], { max: Math.max(mx, ...first) });
@@ -171,12 +178,37 @@
   GEN.tenmath = (L, r) => {
     if (L === 1) { const a = r.int(3, 9); return task('tenmath', 'Die 10 hilft!', [num(r.chance(0.5) ? `10 + ${a} = ?` : `${a} + 10 = ?`, 10 + a, { eq: [`10+${a}`, '?'], explain: `10 + ${a} = ${10 + a}.` })], { max: 10 + a }); }
     if (L === 2) { const a = r.int(12, 19), k = r.chance(0.5); return k ? task('tenmath', 'Zehner und Einer.', [num(`${a} − 10 = ?`, a - 10, { eq: [`${a}-10`, '?'], explain: `${a} − 10 = ${a - 10}.` })], { max: a }) : task('tenmath', 'Zehner und Einer.', [num(`${a} = 10 + ${unk}`, a - 10, { eq: [`10+?`, String(a)], explain: `${a} = 10 + ${a - 10}.` })], { max: a }); }
-    if (L === 3) { const e = r.int(2, 8); return task('tenmath', 'Zehner und Einer.', [num(`1 Zehner und ${e} Einer sind die Zahl ${unk}`, 10 + e, { explain: `10 + ${e} = ${10 + e}.` }), num(`20 − 10 + ${e} = ?`, 10 + e, { eq: [`20-10+${e}`, '?'], explain: `20 − 10 = 10, dann + ${e}.` })], { max: 20 }); }
-    const a = r.int(12, 16), t = a - 10, c = r.int(3, 6);
-    return task('tenmath', 'Erst die 10, dann der Rest.', [num(`${a} − ${t} = ?`, 10, { eq: [`${a}-${t}`, '?'], explain: `${a} − ${t} = 10.` }), num(`10 + ${c} = ?`, 10 + c, { eq: [`10+${c}`, '?'], explain: `10 + ${c} = ${10 + c}.` })], { max: a });
+    if (L === 3) { const e = r.int(2, 8); return task('tenmath', 'Zehner und Einer.', [num(`1 Zehner und ${e} Einer sind die Zahl ${unk}`, 10 + e, { explain: `10 + ${e} = ${10 + e}.` }), (() => { const n2 = 10 + (e + r.int(1, 7)) % 9 + 1; return num(`Die Zahl ${n2} hat 1 Zehner und ${unk} Einer`, n2 - 10, { eq: ['10+?', String(n2)], explain: `${n2} = 10 + ${n2 - 10}.` }); })()], { max: 20 }); }
+    const e = r.int(2, 6), b = r.int(2, 9 - e), a = 10 + e; // e.g. 14 + 5: first the ones (4 + 5), then the ten
+    return task('tenmath', `${a} + ${b}: erst die Einer, dann die 10 dazu.`, [num(`${e} + ${b} = ?`, e + b, { eq: [`${e}+${b}`, '?'], explain: `${e} + ${b} = ${e + b}.` }), num(`10 + ${e + b} = ?`, a + b, { eq: [`10+${e + b}`, '?'], explain: `10 + ${e + b} = ${a + b}, also ${a} + ${b} = ${a + b}.` })], { max: a + b });
   };
 
-  const FAMILIES = ['pairs10', 'plus', 'minus', 'gap', 'line', 'wall', 'double', 'compare', 'story', 'pattern', 'tenmath'];
+  GEN.count = (L, r) => {
+    const see = (a, b) => ({ kind: 'tenframe', a, b: b || 0, show: true });
+    if (L === 1) { const n = r.int(11, 20); return task('count', 'Schau auf die Fünfer und Zehner.', [num('Wie viele Punkte sind es?', n, { visual: see(n), explain: `10 und ${n - 10} sind ${n}.` })], { max: n }); }
+    if (L === 2) { const n = r.int(11, 19), gap = r.chance(0.5);
+      return task('count', gap ? 'Das Feld hat 20 Plätze.' : 'Schau auf die Fünfer und Zehner.', [num(gap ? 'Wie viele fehlen bis 20?' : 'Wie viele Punkte sind es?', gap ? 20 - n : n, { visual: see(n), explain: gap ? `${n} + ${20 - n} = 20.` : `10 und ${n - 10} sind ${n}.` })], { max: 20 }); }
+    if (L === 3) { const a = r.int(6, 9), b = r.int(11 - a, 9);
+      return task('count', 'Helle und dunkle Punkte.', [num('Wie viele Punkte sind es zusammen?', a + b, { visual: see(a, b), eq: [`${a}+${b}`, '?'], explain: `${a} + ${b} = ${a + b}.` })], { max: a + b }); }
+    const n = r.int(11, 19);
+    return task('count', 'Das Feld hat 20 Plätze.', [num('Wie viele Punkte sind es?', n, { visual: see(n), explain: `10 und ${n - 10} sind ${n}.` }), num('Wie viele fehlen bis 20?', 20 - n, { visual: see(n), eq: [`${n}+?`, '20'], explain: `${n} + ${20 - n} = 20.` })], { max: 20 });
+  };
+
+  // new: fact family - one picture, four sums (swap and reverse), shows how plus and minus belong together
+  GEN.family = (L, r) => {
+    let a, b; do { a = r.int(4, 9); b = r.int(Math.max(2, 11 - a), 9); } while (a === b);
+    const s = a + b;
+    if (L <= 2) return task('family', `Eine Familie: ${a} + ${b} = ${s}`, [
+      num(`${b} + ${a} = ?`, s, { eq: [`${b}+${a}`, '?'], explain: `Tauschen: ${b} + ${a} = ${s}.` }),
+      num(`${s} − ${b} = ?`, a, { eq: [`${s}-${b}`, '?'], explain: `Zurück: ${s} − ${b} = ${a}.` }),
+      num(`${s} − ${a} = ?`, b, { eq: [`${s}-${a}`, '?'], explain: `${s} − ${a} = ${b}.` })], { max: s });
+    return task('family', `Eine Familie: ${s} − ${b} = ${a}`, [
+      num(`${s} − ${a} = ?`, b, { eq: [`${s}-${a}`, '?'], explain: `${s} − ${a} = ${b}.` }),
+      num(`${a} + ${b} = ?`, s, { eq: [`${a}+${b}`, '?'], explain: `${a} + ${b} = ${s}.` }),
+      num(`${b} + ${a} = ?`, s, { eq: [`${b}+${a}`, '?'], explain: `${b} + ${a} = ${s}.` })], { max: s });
+  };
+
+  const FAMILIES = ['pairs10', 'plus', 'minus', 'gap', 'line', 'wall', 'double', 'compare', 'story', 'pattern', 'tenmath', 'count', 'family'];
   GEN.mix = (L, r) => GEN[r.pick(FAMILIES)](L, r);
 
   /* ---------- topic catalogue ---------- */
@@ -192,14 +224,16 @@
     story: { icon: 'story', title: 'Gartengeschichten', blurb: 'Kleine Geschichten rechnen.' },
     pattern: { icon: 'wave', title: 'Zahlenmuster', blurb: 'Was kommt als Nächstes?' },
     tenmath: { icon: 'tens', title: 'Mit der 10 rechnen', blurb: 'Die 10 hilft dir.' },
+    count: { icon: 'eye', title: 'Wie viele Punkte?', blurb: 'Zähle mit Fünfern und Zehnern.' },
+    family: { icon: 'swap', title: 'Aufgabenfamilie', blurb: 'Plus und Minus gehören zusammen.' },
     mix: { icon: 'shuffle', title: 'Zaubermix', blurb: 'Von allem etwas!' }
   };
 
   // 8 slots per garden, topics mixed; every garden holds addition, subtraction, pairs/wall-like and story/mix
   const PLAN_TYPES = [
     ['pairs10', 'plus', 'line', 'wall', 'minus', 'double', 'pattern', 'story'],
-    ['plus', 'pairs10', 'gap', 'minus', 'compare', 'wall', 'line', 'mix'],
-    ['minus', 'double', 'tenmath', 'plus', 'gap', 'line', 'story', 'mix'],
+    ['plus', 'pairs10', 'gap', 'minus', 'compare', 'wall', 'line', 'count'],
+    ['minus', 'double', 'tenmath', 'plus', 'gap', 'line', 'story', 'family'],
     ['pairs10', 'wall', 'plus', 'minus', 'compare', 'gap', 'story', 'mix']
   ];
   const ROUND_SIZE = 5;
