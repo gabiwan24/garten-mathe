@@ -103,7 +103,7 @@
     if (L === 1) { const span = r.int(6, 10), from = r.int(Math.max(0, 10 - span), 20 - span), to = from + span, n = r.int(from + 1, to - 1); // asked number anywhere 1..20, ends at most 10 apart
       return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from, to, labels: [from, to] }, explain: `Hier liegt die ${n}.` }], { max: to }); }
     if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(7, 18 - a)), from = r.int(Math.max(0, a + b - 8), Math.min(10, a - 1)), to = from + 10;
-      return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [from, a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
+      return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
     if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5), from = r.int(Math.max(0, n - 9), Math.min(n - 1, 10));
       return task('line', '', [num(before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, before ? n - 1 : n + 1, { explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from, to: from + 10, labels: [n] } })], { max: n + 1 }); }
     const half = r.int(2, 4), a = r.int(6, 12), b = a + 2 * half, from = r.int(Math.max(0, b - 10), Math.min(a, 10)); // b >= 10

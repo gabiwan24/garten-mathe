@@ -36,14 +36,14 @@
       return `<svg class="zg-svg" viewBox="0 0 160 148" width="176" height="163">${g}</svg>`;
     }
     if (v.kind === 'line') {
-      const n = v.to - v.from, W = 520, pad = 30, dx = (W - 2 * pad) / n, y = 78, drag = step.input === 'line', H = v.start != null ? 140 : 110; let s = `<svg class="zg-svg${drag ? ' zg-drag' : ''}" viewBox="0 0 ${W} ${H}" data-pad="${pad}" data-dx="${dx}" data-n="${n}" data-from="${v.from}" data-y="${y}">`;
+      const n = v.to - v.from, W = 520, pad = 30, dx = (W - 2 * pad) / n, y = 78, drag = step.input === 'line', H = v.start != null ? 140 : 110; let s = `<svg class="zg-svg${drag ? ' zg-drag' : ''}" viewBox="0 0 ${W} ${H}" data-pad="${pad}" data-dx="${dx}" data-n="${n}" data-from="${v.from}" data-y="${y}" data-start="${drag && v.start != null ? v.start - v.from : 0}">`;
       s += `<line class="zg-axis" x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}"/>`;
       for (let i = 0; i <= n; i++) { const x = pad + i * dx, val = v.from + i;
         s += `<line class="zg-mark" x1="${x}" y1="${y - 10}" x2="${x}" y2="${y + 10}"/>`;
         if (!v.labels || v.labels.indexOf(val) >= 0) s += `<text class="zg-label" x="${x}" y="${y - 24}" text-anchor="middle">${val}</text>`; // numbers sit ABOVE the line so a finger never covers them; few numbers only, the asked one is never printed
       }
       if (v.start != null) { const x0 = pad + (v.start - v.from) * dx, x1 = pad + (v.start + v.jump - v.from) * dx;
-        s += `<circle class="zg-start" cx="${x0}" cy="${y}" r="9"/><path class="zg-hop" d="M${x0} ${y + 14} Q${(x0 + x1) / 2} ${y + 52} ${x1} ${y + 14}"/>`; }
+        s += `${drag ? '' : `<circle class="zg-start" cx="${x0}" cy="${y}" r="9"/>`}<path class="zg-hop${drag ? ' zg-hid' : ''}" d="M${x0} ${y + 14} Q${(x0 + x1) / 2} ${y + 52} ${x1} ${y + 14}"/>`; }
       if (drag) s += `<g class="zg-ball"><circle class="zg-hit" cx="${pad}" cy="${y}" r="40"/><circle class="zg-knob" cx="${pad}" cy="${y}" r="17"/></g>`; // the ball always lies on the line; the big invisible circle is the finger target
       return s + '</svg>';
     }
@@ -97,7 +97,7 @@
     // number line: drag the ball sideways and let go over a line; it snaps to the nearest tick and the value is checked
     function attachBall(svg, onDrop) {
       const ball = svg.querySelector('.zg-ball'), pad = +svg.dataset.pad, dx = +svg.dataset.dx, n = +svg.dataset.n, from = +svg.dataset.from;
-      let dragging = false, idx = 0;
+      const startIdx = +svg.dataset.start || 0; let dragging = false, idx = startIdx; // the ball sits on the start number for hop tasks, else at the left end
       const toX = e => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()).x; };
       // slides along the line; on release it snaps to the nearest tick
       const place = (x, snap) => { const i = Math.max(0, Math.min(n, Math.round((x - pad) / dx))), cx = snap ? pad + i * dx : Math.max(pad, Math.min(pad + n * dx, x)); idx = i;
@@ -106,7 +106,8 @@
       ball.addEventListener('pointermove', e => { if (dragging) place(toX(e), false); });
       const drop = () => { if (!dragging) return; dragging = false; ball.classList.remove('drag'); ball.style.transition = ''; place(pad + idx * dx, true); setTimeout(() => onDrop(from + idx), 160); };
       ball.addEventListener('pointerup', drop); ball.addEventListener('pointercancel', drop);
-      ballReset = () => { if (locked) return; ball.style.transform = ''; };
+      ballReset = () => { if (locked) return; idx = startIdx; ball.style.transform = `translate(${startIdx * dx}px, 0)`; };
+      ball.style.transition = 'none'; ballReset(); ball.getBoundingClientRect(); ball.style.transition = ''; // appear on the start number without gliding
     }
 
     function buildPad() {
@@ -164,6 +165,7 @@
     }
     function showHelp() {
       help = true; const s = step();
+      const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); // the jump arc is a help, not part of the question
       if (!vis.innerHTML.trim() && s.visual) vis.innerHTML = visualHTML(s.visual, s);
       else if (!vis.innerHTML.trim()) vis.innerHTML = `<div class="zg-tip-line">${ico('help')} ${TIP[task().type] || 'Denk in kleinen Schritten.'}</div>`;
     }

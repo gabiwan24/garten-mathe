@@ -121,6 +121,7 @@
 .zg-label { fill: var(--ink); font-size: var(--t-4); font-weight: var(--w-2); }
 .zg-start { fill: var(--accent); }
 .zg-hop { fill: none; stroke: var(--accent-ink); stroke-width: 4; stroke-dasharray: 7 6; }
+.zg-hop.zg-hid { visibility: hidden; }
 .zg-ball { cursor: grab; transition: transform var(--d-2) var(--ease); touch-action: none; }
 .zg-knob { fill: var(--accent); stroke: var(--accent-ink); stroke-width: 2; }
 .zg-hit { fill: transparent; stroke: none; }
