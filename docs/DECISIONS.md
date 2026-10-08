@@ -34,3 +34,4 @@
 2026-10-08 – Number line is answered by dragging a ball onto the line, no tapping – owner request, closer to the idea of position
 2026-10-08 – Erwachsenen-Themen (Name, Bestwerte, Entwickler-Regler, Fortschritt löschen) hinter einem Menü-Knopf, Ton-Knopf separat sichtbar; Name wird beim ersten Start abgefragt – Kind sieht nur Spiel, Eltern finden alles an einem Ort
 2026-10-08 – Entwickler-Regler und Fortschritt löschen im Menü erst nach 4 Tippen auf „Erwachsene“ sichtbar – nur für Bugfixing, Kind soll sie nicht sehen
+2026-10-09 – Zaubergarten (lab/blumenweg.html) ist die neue App und liegt auf der Pages-Wurzel; alte Svelte-App bleibt im Repo, wird nicht mehr veröffentlicht – Entscheidung des Besitzers

@@ -2,7 +2,8 @@
 Mathe-Lern-PWA (Zahlenraum 20, verliebte Zahlen, Zehnerübergang) für ein Kind der 2. Klasse; Android-Handy, Garten-Gamification.
 
 ## Run
-- Start: `start.bat` (free port from 5173, HTTPS self-signed, reachable in the LAN for phone testing)
+- Start: `start.bat` (free port from 5173, serves `lab/` = the Zaubergarten app `lab/blumenweg.html`, reachable in the LAN)
+- Site build for Pages: `node scripts/build-site.mjs` (lab → site/, index.html = blumenweg.html, sw.js removes the old PWA cache). Old Svelte app in `src/` is no longer published.
 - Test: `npm test` · Type check: `npm run check`
 - Build: `npm run build` (GitHub Pages build uses `BASE_PATH=/garten-mathe/`)
 - Plant gallery for visual tuning (dev only): `https://localhost:<port>/?demo`

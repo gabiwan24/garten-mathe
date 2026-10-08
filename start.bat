@@ -14,11 +14,10 @@ if not defined PORT (
   exit /b 1
 )
 
-echo [start.bat] https://localhost:%PORT%  (Handy im WLAN: https://^<PC-IP^>:%PORT%)
-REM open browser after a short delay (delete this line if not wanted)
-start "" /b cmd /c "timeout /t 3 /nobreak >nul & start "" https://localhost:%PORT%"
+echo [start.bat] http://localhost:%PORT%/blumenweg.html  (Handy im WLAN: http://^<PC-IP^>:%PORT%/blumenweg.html)
+start "" /b cmd /c "timeout /t 2 /nobreak >nul & start "" http://localhost:%PORT%/blumenweg.html"
 
-REM ==== START COMMAND (per project) ====
-call npm run dev -- --port %PORT% --strictPort
+REM ==== START COMMAND (per project): static server for the Zaubergarten in lab/ ====
+python -m http.server %PORT% -d lab
 
 endlocal
