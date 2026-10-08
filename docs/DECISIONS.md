@@ -36,3 +36,4 @@
 2026-10-08 – Entwickler-Regler und Fortschritt löschen im Menü erst nach 4 Tippen auf „Erwachsene“ sichtbar – nur für Bugfixing, Kind soll sie nicht sehen
 2026-10-09 – Zaubergarten (lab/blumenweg.html) ist die neue App und liegt auf der Pages-Wurzel; alte Svelte-App bleibt im Repo, wird nicht mehr veröffentlicht – Entscheidung des Besitzers
 2026-10-09 – Zahlenstrahl: Kugel liegt immer auf der Linie, Zahlen oberhalb (Finger verdeckt nichts), Skala wechselt je Aufgabe (z. B. 8–17, 10–20, 1–20); Gartenansicht im Hochformat näher – Wegmarken auf dem Handy zu klein
+2026-10-09 – Zahlenstrahl immer genau 10 Schritte lang (Fenster wechselt, z. B. 3–13, 10–20) – Besitzer-Vorgabe, ersetzt wechselnde Spannen

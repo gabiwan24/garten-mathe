@@ -39,6 +39,7 @@ for (const n of T.PLAN) {
         if (!s.explain) bad('no explanation for ' + s.prompt);
         if (s.input === 'cmp' && !(s.choices && s.choices.length === 3 && s.answer >= 0 && s.answer <= 2)) bad('cmp malformed');
         if (s.input === 'line' && !(s.visual && s.answer >= s.visual.from && s.answer <= s.visual.to)) bad('line answer outside axis: ' + s.prompt);
+        if (s.visual && s.visual.kind === 'line' && s.visual.to - s.visual.from !== 10) bad('number line must span exactly 10: ' + JSON.stringify(s.visual) + ' ' + s.prompt);
         if (s.visual && s.visual.kind === 'line') { // number line: at most 2 printed numbers, the asked / answer number never among them
           const lb = s.visual.labels; if (!lb || lb.length > 2) bad('line labels: ' + JSON.stringify(lb) + ' ' + s.prompt);
           else if (lb.includes(s.answer)) bad('line shows the answer ' + s.answer + ': ' + s.prompt);

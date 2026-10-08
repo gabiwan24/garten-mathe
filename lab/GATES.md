@@ -7,7 +7,7 @@ Scope: 32 gemischte Übungen für die vier Gärten, Handschrift-Erkennung, Vollb
 - [x] G1: Aufgaben: 32 Marken, 4 Gärten gemischt, jede Rechenaufgabe mit Zahl ≥ 10, Antworten unabhängig nachgerechnet, Wertung und Bestwerte korrekt
   CHECK: node lab/tests/tasks.test.mjs
   EXPECT: TASKS OK
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=tasks=24000 steps=31513 eqChecked=26424 minMax=10 writeNodes=11 | TASKS OK
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=tasks=24000 steps=31515 eqChecked=26422 minMax=10 writeNodes=11 | TASKS OK
 
 - [x] G2: Handschrift-Erkennung erreicht alle Schwellen im synthetischen Benchmark (mild/medium/stark, Falsch-Annahme klein)
   CHECK: node lab/tests/ink.test.mjs

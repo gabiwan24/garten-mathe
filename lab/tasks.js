@@ -99,15 +99,15 @@
   };
 
   GEN.line = (L, r) => {
-    // the scale varies from task to task (8..17, 10..20, 1..20, ...); only the two ends are printed, never the asked number
-    if (L === 1) { const span = r.int(8, 19), from = r.int(Math.max(0, 12 - span), 20 - span), to = from + span, n = r.int(Math.max(from + 2, 9), to - 2);
+    // every number line spans exactly 10 steps, but the window moves from task to task (3..13, 8..18, 10..20, ...); only the two ends are printed, never the asked number
+    if (L === 1) { const from = r.int(1, 10), to = from + 10, n = r.int(Math.max(from + 2, 9), to - 2);
       return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from, to, labels: [from, to] }, explain: `Hier liegt die ${n}.` }], { max: to }); }
-    if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(8, 20 - a)), to = r.int(Math.min(20, a + b + 2), 20), from = Math.min(a - 1, Math.max(0, to - r.int(10, 19)));
+    if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(7, 18 - a)), from = r.int(Math.max(0, a + b - 8), Math.min(10, a - 1)), to = from + 10;
       return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [from, a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
-    if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5);
-      return task('line', '', [num(before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, before ? n - 1 : n + 1, { explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from: n - 3, to: n + 3, labels: [n] } })], { max: n + 1 }); }
-    const half = r.int(2, 4), a = r.int(6, 12), b = a + 2 * half; // b >= 10
-    return task('line', 'Finde die Mitte.', [num(`Welche Zahl liegt genau in der Mitte von ${a} und ${b}?`, a + half, { explain: `Von ${a} bis ${b} sind es ${2 * half} Schritte, die Hälfte ist ${half}: ${a + half}.`, visual: { kind: 'line', from: a - 1, to: b + 1, labels: [a, b] } })], { max: b });
+    if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5), from = r.int(Math.max(0, n - 9), Math.min(n - 1, 10));
+      return task('line', '', [num(before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, before ? n - 1 : n + 1, { explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from, to: from + 10, labels: [n] } })], { max: n + 1 }); }
+    const half = r.int(2, 4), a = r.int(6, 12), b = a + 2 * half, from = r.int(Math.max(0, b - 10), Math.min(a, 10)); // b >= 10
+    return task('line', 'Finde die Mitte.', [num(`Welche Zahl liegt genau in der Mitte von ${a} und ${b}?`, a + half, { explain: `Von ${a} bis ${b} sind es ${2 * half} Schritte, die Hälfte ist ${half}: ${a + half}.`, visual: { kind: 'line', from, to: from + 10, labels: [a, b] } })], { max: b });
   };
 
   GEN.wall = (L, r) => {
