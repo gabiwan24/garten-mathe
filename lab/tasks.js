@@ -47,7 +47,7 @@
 
   GEN.plus = (L, r) => {
     if (L === 1) { // no bridge, sum 11..19
-      const a = r.int(11, 16), room = 9 - (a % 10), b = r.int(2, Math.max(2, Math.min(room, 20 - a)));
+      const s = r.int(13, 19), b = r.int(2, s - 11), a = s - b; // pick the result first so every sum is equally likely
       return task('plus', '', [num(`${a} + ${b} = ?`, a + b, { eq: [`${a}+${b}`, '?'], visual: dots(a, b), explain: `${a} + ${b} = ${a + b}.` })], { max: a + b }); }
     if (L === 2) { // guided bridge over ten, three steps
       const a = r.int(7, 9), b = r.int(11 - a, 9), to = 10 - a, rest = b - to;
@@ -56,14 +56,15 @@
         num(`${b} sind ${to} und ${unk}`, rest, { eq: [`${to}+?`, String(b)], explain: `${b} = ${to} + ${rest}.` }),
         num(`10 + ${rest} = ?`, a + b, { eq: [`10+${rest}`, '?'], visual: dots(10, rest), explain: `10 + ${rest} = ${a + b}.` })], { max: a + b }); }
     if (L === 3) { let a, b;
-      if (r.chance(0.7)) { a = r.int(2, 9); b = r.int(Math.max(2, 11 - a), 9); } else { b = r.int(2, 8); a = 20 - b - r.int(0, 3); a = Math.max(12, a); }
+      if (r.chance(0.7)) { const s = r.int(11, 18); a = r.int(Math.max(2, s - 9), Math.min(9, s - 2)); b = s - a; } // over the ten, every result 11..18 equally likely
+      else { const s = r.int(14, 20); b = r.int(2, Math.min(8, s - 12)); a = s - b; }
       return task('plus', '', [num(`${a} + ${b} = ?`, a + b, { eq: [`${a}+${b}`, '?'], visual: dots(a, b), explain: `Erst zur 10, dann den Rest: ${a} + ${b} = ${a + b}.` })], { max: a + b }); }
     if (r.chance(0.5)) { // three terms with a ten-friend pair
       const a = r.int(3, 9), c = 10 - a, b = r.int(2, 20 - 10 - 1); const order = r.chance(0.5);
       const t1 = order ? [a, b, c] : [a, c, b];
       const s = a + b + c;
       return task('plus', 'Suche das verliebte Paar!', [num(`${t1.join(' + ')} = ?`, s, { eq: [t1.join('+'), '?'], explain: `${a} + ${c} = 10, dann + ${b} = ${s}.` })], { max: s }); }
-    const a = r.int(6, 9), b = r.int(Math.max(6, 11 - a), 9);
+    const s = r.int(12, 18), a = r.int(Math.max(6, s - 9), Math.min(9, s - 6)), b = s - a;
     return task('plus', '', [num(`${a} + ${b} = ?`, a + b, { eq: [`${a}+${b}`, '?'], explain: `${a} + ${b} = ${a + b}.` })], { max: a + b });
   };
 
@@ -246,12 +247,14 @@
   /* ---------- rounds ---------- */
   function makeRound(k, seed) {
     const node = PLAN[k], r = makeRng((seed >>> 0) ^ Math.imul(k + 1, 2654435761));
-    const tasks = [], seen = new Set();
+    const tasks = [], seen = new Set(), results = new Set();
     let guard = 0;
     while (tasks.length < ROUND_SIZE && guard++ < 200) {
       const fam = node.type === 'mix' ? r.pick(FAMILIES) : node.type;
       const t = GEN[fam](node.level, r), key = JSON.stringify([t.ctx, t.steps.map(s => [s.prompt, s.answer, s.visual && s.visual.rows])]);
-      if (seen.has(key)) continue; seen.add(key); t.write = node.write; tasks.push(t);
+      const res = t.steps[t.steps.length - 1].answer;
+      if (seen.has(key) || (guard < 150 && results.has(res))) continue; // different tasks AND different results within one round
+      seen.add(key); results.add(res); t.write = node.write; tasks.push(t);
     }
     return { k, node, tasks };
   }

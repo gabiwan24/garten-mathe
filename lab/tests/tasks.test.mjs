@@ -93,6 +93,10 @@ if (!helpSet.has(T.praise({ wrong: 0, help: true, ink: false, type: 'plus' }, ''
     if (ty === 'line' && L === 3 && t.steps[0].input !== 'line') bad('neighbour task must be dragged');
     if (ty === 'family' && new Set(t.steps.map(s => s.answer)).size < 2) bad('family needs two different numbers'); }
   if (pat4.size < 10) bad('pattern level 4 repeats itself: ' + pat4.size + ' different'); }
+// variety: no result dominates a plus round, and within one round results repeat only when the task type has few possible results
+for (const n of T.PLAN.filter(n => n.type === 'plus')) { const c = {}; let tot = 0;
+  for (let s = 0; s < 300; s++) for (const t of T.makeRound(n.k, s * 7919 + 1).tasks) { const a = t.steps[t.steps.length - 1].answer; c[a] = (c[a] || 0) + 1; tot++; }
+  const top = Math.max(...Object.values(c)) / tot; if (top > 0.2) bad(`plus node ${n.k}: one result is ${Math.round(top * 100)} % of all answers`); }
 // determinism
 const a = JSON.stringify(T.makeRound(5, 123)), b = JSON.stringify(T.makeRound(5, 123)); if (a !== b) bad('rounds not deterministic');
 
