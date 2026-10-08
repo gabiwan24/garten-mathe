@@ -99,8 +99,8 @@
   };
 
   GEN.line = (L, r) => {
-    // every number line spans exactly 10 steps, but the window moves from task to task (3..13, 8..18, 10..20, ...); only the two ends are printed, never the asked number
-    if (L === 1) { const from = r.int(1, 10), to = from + 10, n = r.int(Math.max(from + 2, 9), to - 2);
+    // number lines span at most 10 steps and the window moves from task to task (3..13, 8..16, 10..20, ...); only the two ends are printed, never the asked number
+    if (L === 1) { const span = r.int(6, 10), from = r.int(Math.max(0, 10 - span), 20 - span), to = from + span, n = r.int(from + 1, to - 1); // asked number anywhere 1..20, ends at most 10 apart
       return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from, to, labels: [from, to] }, explain: `Hier liegt die ${n}.` }], { max: to }); }
     if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(7, 18 - a)), from = r.int(Math.max(0, a + b - 8), Math.min(10, a - 1)), to = from + 10;
       return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [from, a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
