@@ -53,6 +53,13 @@
 .zg-story .zg-prompt { font-size: var(--t-3); font-weight: var(--w-1); color: var(--ink-2); }
 .zg-visual { display: flex; justify-content: center; }
 .zg-visual:empty { display: none; }
+/* quick look (count task): the picture is covered after a moment; the cover itself is the "show again" button */
+.zg-visual.zg-flash { position: relative; }
+.zg-visual .zg-cover { position: absolute; inset: 0; margin: 0 auto; width: min(100%, calc(var(--size-key) * 4)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-2);
+  font: inherit; font-size: var(--t-1); font-weight: var(--w-2); color: var(--accent-ink); background: var(--tint-2); border: var(--bw) solid var(--line); border-radius: var(--r-2); cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity var(--d-2) var(--ease); }
+.zg-visual.zg-covered .zg-cover { opacity: 1; pointer-events: auto; }
+.zg-visual.zg-covered .zg-frame { visibility: hidden; }
 .zg-tip-line { font-size: var(--t-2); color: var(--ink-2); text-wrap: balance; }
 
 /* ---------- input: priority 3 = answer, 4 = keys; sits on the background, not in a second card ---------- */

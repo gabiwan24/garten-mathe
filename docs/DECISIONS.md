@@ -40,3 +40,4 @@
 2026-10-09 – „Wo liegt die …?“: Zahl 1–19, Strahl höchstens 10 Zahlen lang (nicht fest 10) – Besitzer-Korrektur
 2026-10-09 – Hüpf-Aufgabe: Kugel startet auf der Startzahl und wird um die Hüpfweite gezogen; Bogen mit dem Ergebnis nur als Hilfe nach Fehler/Hilfe – vorher verriet der Bogen die Lösung
 2026-10-09 – Übungsprüfung: 3 Fehler + 5 schwache Stellen korrigiert, neue Übungen „Wie viele Punkte?“ (Garten 2) und „Aufgabenfamilie“ (Garten 3) statt Zaubermix – Mengenvorstellung und Plus/Minus-Zusammenhang fehlten
+2026-10-09 – „Wie viele Punkte?“ als Blitzblick: Bild 2 s sichtbar, dann abgedeckt, „Nochmal zeigen“ beliebig oft ohne Abzug – verhindert Einzelzählen, kein sichtbarer Timer

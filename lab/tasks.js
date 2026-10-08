@@ -184,7 +184,7 @@
   };
 
   GEN.count = (L, r) => {
-    const see = (a, b) => ({ kind: 'tenframe', a, b: b || 0, show: true });
+    const see = (a, b) => ({ kind: 'tenframe', a, b: b || 0, show: true, flash: true }); // shown briefly, then covered (see overlay.js flash)
     if (L === 1) { const n = r.int(11, 20); return task('count', 'Schau auf die Fünfer und Zehner.', [num('Wie viele Punkte sind es?', n, { visual: see(n), explain: `10 und ${n - 10} sind ${n}.` })], { max: n }); }
     if (L === 2) { const n = r.int(11, 19), gap = r.chance(0.5);
       return task('count', gap ? 'Das Feld hat 20 Plätze.' : 'Schau auf die Fünfer und Zehner.', [num(gap ? 'Wie viele fehlen bis 20?' : 'Wie viele Punkte sind es?', gap ? 20 - n : n, { visual: see(n), explain: gap ? `${n} + ${20 - n} = 20.` : `10 und ${n - 10} sind ${n}.` })], { max: 20 }); }

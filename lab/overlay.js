@@ -68,7 +68,7 @@
 
   function runRound(k, opts) { // opts: {hue, onFinish(pct, perfect, again), onClose()}
     const node = T.PLAN[k], round = T.makeRound(k, (Date.now() & 0x7fffffff)), root = open(opts.hue); window.__zgRound = round; // exposed for automated checks
-    let ti = 0, si = 0, wrong = 0, help = false, shown = false, entry = '', useInk = node.write && !!window.Ink, strokes = [], inkTimer = 0, locked = false;
+    let ti = 0, si = 0, wrong = 0, help = false, shown = false, entry = '', useInk = node.write && !!window.Ink, strokes = [], inkTimer = 0, flashTimer = 0, locked = false;
     const results = [], stepResults = []; let ballReset = null, lastPraise = '';
     root.innerHTML = `<div class="zg-top"><button class="zg-btn ghost icon" data-a="x" aria-label="Zurück">${ico('close')}</button><div class="zg-prog"></div><span class="zg-spacer"></span></div>
       <div class="zg-body"><div class="zg-card"><div class="zg-ctx"></div><div class="zg-prompt"></div><div class="zg-visual"></div></div><div class="zg-input"></div><div class="zg-msg"></div></div>
@@ -84,6 +84,7 @@
       ctx.textContent = nb(t.ctx); prompt.textContent = nb(s.prompt.replace(/ ○ /, '  ?  '));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
       vis.innerHTML = s.visual && (s.visual.kind !== 'tenframe' || s.visual.show) ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help (they would give the answer away), unless the picture IS the task
+      clearTimeout(flashTimer); if (s.visual && s.visual.flash) flash(); // quick look: the picture is covered after a moment, so the child sees groups instead of counting one by one
       ballReset = null; if (s.input === 'line') attachBall(vis.querySelector('.zg-svg'), v => submit(String(v)));
       inp.innerHTML = ''; inp.hidden = false;
       if (s.input === 'cmp') { const c = h('div', 'zg-choices'); s.choices.forEach((ch, i) => { const b = h('button', 'zg-key', ch); b.onclick = () => submit(String(i)); c.appendChild(b); }); inp.appendChild(c); }
@@ -164,6 +165,12 @@
       if (wrong === 1) { say('Fast! Schau noch einmal genau hin.', true); showHelp(); if (inp._draw) inp._draw(); }
       else { shown = true; locked = true; say(`So geht es: ${s.explain}`, true); inp.innerHTML = ''; const ok2 = h('button', 'zg-btn primary', 'Weiter'); inp.appendChild(ok2); inp.hidden = false; ok2.onclick = next; }
     }
+    const FLASH_MS = 2000;
+    function flash() {
+      vis.classList.remove('zg-covered'); vis.classList.add('zg-flash');
+      if (!vis.querySelector('.zg-cover')) vis.insertAdjacentHTML('beforeend', `<button class="zg-cover" type="button" data-a="peek">${ico('eye')}<span>Nochmal zeigen</span></button>`);
+      clearTimeout(flashTimer); flashTimer = setTimeout(() => vis.classList.add('zg-covered'), FLASH_MS);
+    }
     function showHelp() {
       help = true; const s = step();
       const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); // the jump arc is a help, not part of the question
@@ -191,8 +198,9 @@
 
     root.addEventListener('click', e => {
       const a = e.target.closest('[data-a]'); if (!a) return; const act = a.getAttribute('data-a');
-      if (act === 'x') { close(root); opts.onClose && opts.onClose(); }
+      if (act === 'x') { clearTimeout(flashTimer); close(root); opts.onClose && opts.onClose(); }
       else if (act === 'help') { if (!locked) showHelp(); }
+      else if (act === 'peek') flash(); // as often as wanted, never counts against the child
       else if (act === 'alt') { useInk = !useInk; render(); }
     });
     render();
