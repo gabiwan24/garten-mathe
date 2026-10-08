@@ -165,7 +165,7 @@
       if (wrong === 1) { say('Fast! Schau noch einmal genau hin.', true); showHelp(); if (inp._draw) inp._draw(); }
       else { shown = true; locked = true; say(`So geht es: ${s.explain}`, true); inp.innerHTML = ''; const ok2 = h('button', 'zg-btn primary', 'Weiter'); inp.appendChild(ok2); inp.hidden = false; ok2.onclick = next; }
     }
-    const FLASH_MS = 2000;
+    const FLASH_MS = 3000;
     function flash() {
       vis.classList.remove('zg-covered'); vis.classList.add('zg-flash');
       if (!vis.querySelector('.zg-cover')) vis.insertAdjacentHTML('beforeend', `<button class="zg-cover" type="button" data-a="peek">${ico('eye')}<span>Nochmal zeigen</span></button>`);
