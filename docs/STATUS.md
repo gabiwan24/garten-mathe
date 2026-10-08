@@ -1,9 +1,12 @@
 # Status
-_Updated: 2026-10-07_
+_Updated: 2026-10-08_
 
 ## Now
 Feature "Selbst einpflanzen + breiter Garten" is done on branch feat-planting (stacked on fix-shake, PR #2: shake fix + fullscreen).
 Open: phone test, then merge.
+
+## Prototype (lab/, not yet in src/)
+3D Zaubergarten `lab/blumenweg.html` (serve lab/ with any static server): 32 waypoints = 4 gardens x 8, one exercise of 5 mixed questions each (`lab/tasks.js`), full-screen exercise UI (`lab/overlay.js`), finger writing (`lab/ink.js`, test page `lab/schreiben.html`), gate light-up + garden table of personal bests, fireworks finale, witch cottage. Concept + handwriting feasibility: docs/superpowers/specs/2026-10-08-zaubergarten-aufgaben.md. Checks: `node lab/tests/{tasks.test,ink.test,scene.check,spec.check}.mjs`. Open: real children's handwriting samples, phone test, port to src/.
 
 ## Works
 - 3 task types with 4 levels each, Prachtpflanze (10/10 first try, no help), watering, Leitner + level engine, daily limit

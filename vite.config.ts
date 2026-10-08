@@ -37,5 +37,6 @@ export default defineConfig({
   ],
   // Empty inline config stops Vite from searching up for a parent postcss.config.js.
   css: { postcss: {} },
-  server: { host: true },
+  // PORT is set by the preview tool; start.bat passes --port itself and wins over this.
+  server: { host: true, port: Number(process.env.PORT) || 5173 },
 });
