@@ -118,7 +118,7 @@
       draw();
       const pad = h('div', 'zg-pad');
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'].forEach(k => {
-        const b = h('button', 'zg-key' + (k === 'ok' ? ' ok' : ''), k === 'del' ? ico('backspace') : k === 'ok' ? ico('check') : k); b.setAttribute('aria-label', k === 'del' ? 'Löschen' : k === 'ok' ? 'Fertig' : k);
+        const b = h('button', 'zg-key' + (k === 'ok' ? ' ok' : k === 'del' ? ' del' : ''), k === 'del' ? ico('backspace') : k === 'ok' ? ico('check') : k); b.setAttribute('aria-label', k === 'del' ? 'Löschen' : k === 'ok' ? 'Fertig' : k);
         b.onclick = () => { if (locked) return; if (k === 'del') entry = entry.slice(0, -1); else if (k === 'ok') { if (entry) submit(entry); return; } else if (entry.length < 2) entry += k; draw(); };
         pad.appendChild(b); });
       inp.appendChild(pad);
