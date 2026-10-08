@@ -23,3 +23,14 @@
 2026-10-07 – Schema v2 migration distributes existing plants over the rows (slotForIndex) – old gardens fill all three rows instead of one
 2026-10-07 – Pending-seed banner sits above the footer under the garden instead of at the top – keeps the header calm and the banner next to the Weiter button
 2026-10-07 – No falling-seed animation: after confirm the plant grows directly from the soil – keeps it short and simple
+2026-10-08 – Each waypoint is one exercise of 5 questions (10–100 points, never below 10) – short enough for a 7-year-old, maps onto the 5-dot waypoint display
+2026-10-08 – Topics are mixed inside every garden, difficulty rises with the garden – lets the child practise everything; the glyph on the waypoint shows the topic
+2026-10-08 – Highscore = personal best per waypoint plus a garden table at each gate, no ranking – matches the no-leaderboard rule
+2026-10-08 – Finger writing uses an expected-aware point-cloud matcher with a confirm step and a keypad fallback – false accepts stay below 1 % even when recognition is shaky
+2026-10-08 – No read-aloud (the tap-only prototype was removed again) – the user does not want it; matches the first spec
+2026-10-08 – Prototype lives in lab/ as plain JS modules with node tests (tasks.js, ink.js, overlay.js) – port to src/ after the design is settled
+2026-10-08 – Kid UI gets its own design system (lab/zg.css + rules doc) instead of the generic skill – the owner wants flower colours and a child-friendly look; the skill defaults (sharp rectangles, acid yellow) do not fit
+2026-10-08 – No emojis: monochrome line SVG icons from lab/icons.js, also drawn on the 3D waypoints – owner request, one consistent look
+2026-10-08 – Number line is answered by dragging a ball onto the line, no tapping – owner request, closer to the idea of position
+2026-10-08 – Erwachsenen-Themen (Name, Bestwerte, Entwickler-Regler, Fortschritt löschen) hinter einem Menü-Knopf, Ton-Knopf separat sichtbar; Name wird beim ersten Start abgefragt – Kind sieht nur Spiel, Eltern finden alles an einem Ort
+2026-10-08 – Entwickler-Regler und Fortschritt löschen im Menü erst nach 4 Tippen auf „Erwachsene“ sichtbar – nur für Bugfixing, Kind soll sie nicht sehen

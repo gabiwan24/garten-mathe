@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Schreiben testen</title>
+<style>
+  :root { color-scheme: dark; --bg:#14181d; --fg:#e8eef4; --mut:#8a97a6; --acc:#7bd88f; --warn:#ffb86b; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:12px; background:var(--bg); color:var(--fg); font:16px system-ui, sans-serif; }
+  h1 { font-size:18px; margin:0 0 8px; }
+  #pad { display:block; width:100%; height:48vh; max-height:420px; background:#1d242c; border:2px dashed #3a4654; border-radius:12px; touch-action:none; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; align-items:center; }
+  button, input { font:inherit; padding:10px 14px; border-radius:10px; border:1px solid #3a4654; background:#242d37; color:var(--fg); }
+  input { width:6em; }
+  button { cursor:pointer; }
+  #res { display:flex; flex-wrap:wrap; gap:16px; }
+  .dig { text-align:center; min-width:90px; }
+  .big { font-size:72px; line-height:1; font-weight:700; color:var(--acc); }
+  .cand { color:var(--mut); font-size:14px; }
+  .muted { color:var(--mut); }
+  #match.ok { color:var(--acc); } #match.no { color:var(--warn); }
+</style>
+</head>
+<body>
+<h1>Schreib eine Zahl</h1>
+<canvas id="pad"></canvas>
+<div class="row">
+  <button id="clear">Löschen</button>
+  <label>Erwartet: <input id="exp" inputmode="numeric" maxlength="3" placeholder="z. B. 14"></label>
+  <label>Probe: <input id="label" inputmode="numeric" maxlength="3" placeholder="Zahl"></label>
+  <button id="save">Probe speichern</button>
+  <button id="export">Exportieren</button>
+  <span id="count" class="muted"></span>
+</div>
+<div id="res" class="muted">Schreib mit dem Finger oder der Maus.</div>
+<p id="conf" class="muted"></p>
+<p id="match"></p>
+<script src="ink.js"></script>
+<script>
+(function () {
+  var cv = document.getElementById('pad'), ctx = cv.getContext('2d');
+  var strokes = [], cur = null, timer = null, KEY = 'zg_ink_samples';
+
+  function fit() {
+    var r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    cv.width = r.width * d; cv.height = r.height * d;
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    redraw();
+  }
+  function redraw() {
+    var r = cv.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#e8eef4';
+    strokes.forEach(function (s) {
+      ctx.beginPath();
+      s.forEach(function (p, i) { if (i) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); });
+      if (s.length === 1) ctx.lineTo(s[0].x + 0.1, s[0].y);
+      ctx.stroke();
+    });
+  }
+  function pos(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+
+  cv.addEventListener('pointerdown', function (e) {
+    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+    clearTimeout(timer);
+    cur = [pos(e)]; strokes.push(cur); redraw();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!cur) return;
+    clearTimeout(timer);
+    (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(function (ev) { cur.push(pos(ev)); });
+    redraw();
+  });
+  function up() { if (!cur) return; cur = null; clearTimeout(timer); timer = setTimeout(evaluate, 700); }
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+
+  function evaluate() {
+    var out = document.getElementById('res');
+    if (!strokes.length) return;
+    var t0 = performance.now();
+    var r = Ink.recognizeNumber(strokes);
+    var ms = performance.now() - t0;
+    out.className = ''; out.innerHTML = '';
+    r.digits.forEach(function (d) {
+      var el = document.createElement('div'); el.className = 'dig';
+      el.innerHTML = '<div class="big">' + d.digit + '</div><div class="cand">' +
+        d.ranked.slice(0, 3).map(function (c) { return c.digit + ' ' + Math.round(c.score * 100) + '%'; }).join('<br>') + '</div>';
+      out.appendChild(el);
+    });
+    if (!r.digits.length) out.textContent = 'Nichts erkannt.';
+    document.getElementById('conf').textContent = 'Sicherheit: ' + Math.round(r.confidence * 100) + '% ' +
+      (r.ambiguous ? '(unsicher) ' : '') + '· ' + ms.toFixed(1) + ' ms';
+    var exp = document.getElementById('exp').value.trim(), m = document.getElementById('match');
+    if (exp) {
+      var d = Ink.matchExpected(strokes, exp);
+      m.className = d.accept ? 'ok' : 'no';
+      m.textContent = (d.accept ? 'Angenommen' : (d.ambiguous ? 'Unsicher: bitte nochmal schreiben' : 'Nicht angenommen')) +
+        ' · gelesen: ' + (d.bestText || '-') + ' · Passung ' + Math.round(d.expectedScore * 100) + '% · Abstand ' + d.margin.toFixed(3);
+    } else { m.className = ''; m.textContent = ''; }
+  }
+
+  document.getElementById('clear').onclick = function () {
+    clearTimeout(timer); strokes = []; redraw();
+    document.getElementById('res').textContent = 'Schreib mit dem Finger oder der Maus.';
+    document.getElementById('conf').textContent = ''; document.getElementById('match').textContent = '';
+  };
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+  function showCount() { document.getElementById('count').textContent = load().length + ' Proben'; }
+  document.getElementById('save').onclick = function () {
+    var label = document.getElementById('label').value.trim() || document.getElementById('exp').value.trim();
+    if (!label || !strokes.length) { alert('Erst schreiben und eine Zahl eintragen.'); return; }
+    var all = load();
+    all.push({ label: label, strokes: strokes.map(function (s) { return s.map(function (p) { return { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 }; }); }) });
+    try { localStorage.setItem(KEY, JSON.stringify(all)); } catch (e) { alert('Speichern nicht möglich.'); }
+    showCount();
+  };
+  document.getElementById('export').onclick = function () {
+    var blob = new Blob([JSON.stringify(load(), null, 1)], { type: 'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'zg_ink_samples.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  window.addEventListener('resize', fit);
+  fit(); showCount();
+})();
+</script>
+</body>
+</html>

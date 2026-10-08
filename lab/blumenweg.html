@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Blumenweg – Erfolgs-Test</title>
+<style>
+  :root { --ink:#e8ecf4; --green:#2bb673; --card:rgba(24,26,32,.92); }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:#0d0e11; color:var(--ink); font:16px/1.4 system-ui, sans-serif; overflow:hidden; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; }
+  .panel { position:fixed; left:50%; bottom:12px; transform:translateX(-50%); width:min(calc(100% - 24px), 520px);
+           background:var(--card); border-radius:14px; padding:12px 16px; display:grid; gap:10px;
+           box-shadow:0 2px 14px rgba(31,42,68,.18); }
+  label { display:grid; gap:2px; }
+  .head { display:flex; justify-content:space-between; font-weight:600; }
+  .head span { font-variant-numeric:tabular-nums; opacity:.6; font-weight:400; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:2px 16px; }
+  .grid label { grid-template-columns:auto auto 1fr auto; align-items:center; gap:8px; font-size:13px; }
+  .grid output { font-variant-numeric:tabular-nums; opacity:.6; min-width:2.2em; text-align:right; }
+  .grid input { height:24px; }
+  #tog { font:inherit; font-size:13px; padding:4px 8px; border:1px solid #555; background:#0d0e11; color:var(--ink); border-radius:8px; justify-self:start; }
+  .panel.min > :not(.bar) { display:none; }
+  .bar { display:flex; gap:8px; }
+  .row { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; justify-content:space-between; }
+  .chk { display:flex; align-items:center; gap:6px; font-size:13px; }
+  #reset { font:inherit; font-size:13px; padding:4px 8px; border:1px solid #555; background:#0d0e11; color:var(--ink); border-radius:8px; }
+  .panel { max-height:62vh; overflow:auto; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tabs button { font:inherit; font-size:13px; padding:4px 8px; border:1px solid #555; background:#0d0e11; color:var(--ink); border-radius:8px; }
+  .tabs button.on { background:var(--green); color:#04140b; border-color:var(--green); }
+  .small { font:inherit; font-size:13px; padding:4px 8px; border:1px solid #555; background:#0d0e11; color:var(--ink); border-radius:8px; justify-self:start; }
+  .grid label.off { display:none; }
+  [hidden] { display:none !important; }
+  .ends { display:flex; justify-content:space-between; font-size:12px; opacity:.55; }
+  input[type=range] { width:100%; height:30px; accent-color:var(--green); margin:0; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="tip" class="zg-tip" hidden></div>
+<div class="zg-fabs" id="fabs"></div>
+<div class="panel" id="panel" hidden>
+  <label>
+    <div class="head">Alle erledigten Punkte <span id="cnt"></span></div>
+    <input id="all" type="range" min="10" max="100" value="60">
+    <div class="ends"><span>wenige Blumen</span><span>viele Blumen</span></div>
+  </label>
+  <div class="tabs" id="tabs"></div>
+  <button id="finish" type="button" class="small">Garten abschließen / öffnen</button>
+  <div class="grid" id="wps"></div>
+  <div class="row"><label class="chk"><input id="keep" type="checkbox" checked>Wiese bleibt stehen (nie weniger)</label><button id="reset" type="button">Wiese zurücksetzen</button></div>
+  <label>
+    <div class="head">Ansicht (Mausrad / zwei Finger)</div>
+    <input id="view" type="range" min="0" max="1000" value="0">
+    <div class="ends"><span>Start</span><span>Ende</span></div>
+  </label>
+  <label>
+    <div class="head">Wind <span id="windv"></span></div>
+    <input id="wind" type="range" min="0" max="100" value="50">
+    <div class="ends"><span>kein Wind</span><span>starke Böen</span></div>
+  </label>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="zg.css">
+<script src="tasks.js"></script>
+<script src="icons.js"></script>
+<script src="ink.js"></script>
+<script src="overlay.js"></script>
+<script src="fireworks.js"></script>
+<script>
+const rnd = (a, b) => a + Math.random() * (b - a);
+const SECTIONS = 4, SECTION = 8, WAYPOINTS = SECTIONS * SECTION, PER_WP = 200, N = WAYPOINTS * PER_WP; // 4 gardens of 8 waypoints, a fence between them
+// one colour climate per waypoint (never green), neighbours well apart: blue, pink, orange, violet, red, azure, purple, amber
+const CLIMATE_BASE = [0.60, 0.90, 0.07, 0.74, 0.99, 0.53, 0.82, 0.13];
+const CLIMATE = Array.from({ length: WAYPOINTS }, (_, k) => CLIMATE_BASE[k % CLIMATE_BASE.length]);
+const NODE_R = 0.7, CLEAR_R = 1.35; // nodes stay visible: no flowers inside CLEAR_R
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0e11);
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 150);
+
+// Path like Duolingo: starts at the bottom (near), winds upwards (far). One node = one exercise.
+const wpPos = [];
+for (let k = 0; k < WAYPOINTS; k++) wpPos.push(new THREE.Vector3(Math.sin(k * 1.15) * 2.6, 0, 9 - k * 2.9 - Math.floor(k / SECTION) * 2.4)); // extra room for each fence
+const HOUSE = new THREE.Vector3(wpPos[WAYPOINTS - 1].x, 0, wpPos[WAYPOINTS - 1].z - 8); // the witch cottage at the end of the path
+const curve = new THREE.CatmullRomCurve3(wpPos);
+const pathPts = curve.getSpacedPoints(600), PATH_CLEAR = 0.6; // flowers keep this distance from the stepping stones
+const nearPath = (x, z) => pathPts.some(q => Math.hypot(q.x - x, q.z - z) < PATH_CLEAR);
+// Every waypoint is a light source: scene materials are darkened by their distance to the nodes (edges almost black)
+const lightU = {
+  uNode: { value: wpPos.concat([HOUSE]) }, uInt: { value: Array(WAYPOINTS + 1).fill(0.08) },
+  uLCol: { value: Array.from({ length: WAYPOINTS + 1 }, () => new THREE.Color(0.6, 0.6, 0.65)) }
+};
+function lit(mat) {
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, lightU);
+    sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      vec4 wp_ = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        wp_ = instanceMatrix * wp_;
+      #endif
+      vWP = (modelMatrix * wp_).xyz;`);
+    sh.fragmentShader = `varying vec3 vWP; uniform vec3 uNode[${WAYPOINTS + 1}]; uniform vec3 uLCol[${WAYPOINTS + 1}]; uniform float uInt[${WAYPOINTS + 1}];\n` +
+      sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', `vec3 la_ = vec3(0.06);
+      for (int i = 0; i < ${WAYPOINTS + 1}; i++) { vec2 d_ = vWP.xz - uNode[i].xz; float r2_ = dot(d_, d_) + vWP.y * vWP.y * 0.4; la_ += uLCol[i] * (uInt[i] * exp(-r2_ / 22.0)); }
+      gl_FragColor = vec4( outgoingLight * min(la_, vec3(1.15)), diffuseColor.a );`);
+  };
+  return mat;
+}
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(70, 150).rotateX(-Math.PI / 2), lit(new THREE.MeshBasicMaterial({ color: 0x3c3e46 })));
+ground.position.set(0, -0.01, -38); scene.add(ground);
+// Path = light grey stepping stones following the curve; irregular rounded shapes (4 variants), random turn, size and jitter
+{
+  const stoneGeo = () => {
+    const pts = [];
+    for (let k = 0; k < 10; k++) { // squircle with a wobbly radius and a random aspect
+      const a = k / 10 * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), r = 1 / Math.pow(Math.pow(Math.abs(c), 4) + Math.pow(Math.abs(sn), 4), 0.25) * rnd(0.88, 1.1);
+      pts.push(new THREE.Vector3(c * r * 0.15 * rnd(0.92, 1.18), sn * r * 0.15, 0));
+    }
+    const outline = new THREE.CatmullRomCurve3(pts, true).getPoints(40).map(v => new THREE.Vector2(v.x, v.y));
+    return new THREE.ExtrudeGeometry(new THREE.Shape(outline), { depth: 0.1, bevelEnabled: true, bevelThickness: 0.014, bevelSize: 0.014, bevelSegments: 3, curveSegments: 12 }).rotateX(-Math.PI / 2).translate(0, 0.014, 0);
+  };
+  const variants = Array.from({ length: 4 }, stoneGeo), stoneMat = lit(new THREE.MeshLambertMaterial({ color: 0xd2d2d2 }));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(-3, 5, 2.5); // only the stones use real lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55), sun);
+  const total = curve.getLength(), per = total / 2400, last = wpPos[WAYPOINTS - 1], doorZ = HOUSE.z + 1.7;
+  const toDoor = []; for (let d = 0; d <= last.z - doorZ; d += per) toDoor.push(new THREE.Vector3(last.x, 0, last.z - d));
+  const samples = curve.getSpacedPoints(2400).concat(toDoor);
+  const placed = variants.map(() => []);
+  let idx = 3, prevR = 0;
+  for (let guard = 0; guard < 2000; guard++) {
+    const sz = rnd(0.8, 1.15), R = 0.2 * sz; // R = generous radius of the stone incl. its corners
+    if (prevR) idx += Math.max(1, Math.round((prevR + R + rnd(0.05, 0.11)) / per)); // step by both radii + a gap, so stones never touch
+    prevR = R;
+    if (idx >= samples.length - 3) break;
+    const pt = samples[idx], nx = samples[idx + 2], pv = samples[idx - 2];
+    if (wpPos.some(w => Math.hypot(w.x - pt.x, w.z - pt.z) < NODE_R + 0.22)) continue; // keep the waypoint discs free
+    const tx = nx.x - pv.x, tz = nx.z - pv.z, tl = Math.hypot(tx, tz) || 1, off = rnd(-0.06, 0.06); // sideways jitter only: never closes the gap
+    placed[Math.floor(Math.random() * 4)].push([pt.x + (-tz / tl) * off, pt.z + (tx / tl) * off, rnd(0, Math.PI * 2), sz]);
+  }
+  const mm = new THREE.Matrix4(), qq = new THREE.Quaternion(), yAxis = new THREE.Vector3(0, 1, 0);
+  variants.forEach((g, v) => {
+    const im2 = new THREE.InstancedMesh(g, stoneMat, Math.max(1, placed[v].length)); im2.frustumCulled = false;
+    placed[v].forEach(([x, z, rot, sz], j) => { qq.setFromAxisAngle(yAxis, rot); mm.compose(new THREE.Vector3(x, 0, z), qq, new THREE.Vector3(sz, 1, sz)); im2.setMatrixAt(j, mm); im2.setColorAt(j, new THREE.Color().setScalar(rnd(0.8, 1))); });
+    im2.count = placed[v].length; scene.add(im2);
+  });
+}
+// Garden fences between the sections, with a gate where the path passes
+const fenceAt = Array.from({ length: SECTIONS }, (_, f) => f === SECTIONS - 1
+  ? new THREE.Vector3(wpPos[WAYPOINTS - 1].x, 0, wpPos[WAYPOINTS - 1].z - 2.4)
+  : curve.getPoint((SECTION * (f + 1) - 0.5) / (WAYPOINTS - 1)));
+const gates = []; // one gate per garden: closed until every waypoint of the garden is done, then it dissolves into glitter
+const GATE_PARTICLES = 160;
+const FENCE_HALF = 9.5, GATE_HALF = 1.1;
+{
+  const shape = new THREE.Shape(); // picket with pointed top
+  shape.moveTo(-0.07, 0); shape.lineTo(0.07, 0); shape.lineTo(0.07, 0.8); shape.lineTo(0, 0.95); shape.lineTo(-0.07, 0.8); shape.closePath();
+  const pickGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.05, bevelEnabled: false }).translate(0, 0, -0.025);
+  const wood = lit(new THREE.MeshBasicMaterial({ color: 0xc9bb99 })), post = lit(new THREE.MeshBasicMaterial({ color: 0x9c906f }));
+  const pickets = [], mat = new THREE.Matrix4(), rail = new THREE.BoxGeometry(1, 0.07, 0.05), postGeo = new THREE.BoxGeometry(0.17, 1.15, 0.17).translate(0, 0.575, 0);
+  const rails = new THREE.Group();
+  for (const fp of fenceAt) {
+    for (const [x0, x1] of [[-FENCE_HALF, fp.x - GATE_HALF], [fp.x + GATE_HALF, FENCE_HALF]]) {
+      for (let x = x0 + 0.15; x < x1; x += 0.3) pickets.push([x, fp.z, rnd(-0.06, 0.06), rnd(0.92, 1.06)]);
+      for (const y of [0.3, 0.62]) { const r = new THREE.Mesh(rail, wood); r.scale.x = x1 - x0; r.position.set((x0 + x1) / 2, y, fp.z - 0.05); rails.add(r); }
+      for (const x of [x0, x1]) { const pst = new THREE.Mesh(postGeo, post); pst.position.set(x, 0, fp.z); rails.add(pst); }
+    }
+  }
+  const im = new THREE.InstancedMesh(pickGeo, wood, pickets.length);
+  pickets.forEach(([x, z, tilt, hs], i) => { mat.compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, tilt)), new THREE.Vector3(1, hs, 1)); im.setMatrixAt(i, mat); });
+  scene.add(im, rails);
+
+  const sparkTex = (() => { // glitter: soft glow with a thin cross
+    const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+    const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.25, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff'; g.fillRect(30, 4, 4, 56); g.fillRect(4, 30, 56, 4);
+    return new THREE.CanvasTexture(c);
+  })();
+  fenceAt.forEach((fp, sIdx) => {
+    const mat2 = lit(new THREE.MeshBasicMaterial({ color: 0xe6d6ac, transparent: true })), grp = new THREE.Group();
+    grp.position.set(fp.x, 0, fp.z);
+    for (let x = -GATE_HALF + 0.15; x < GATE_HALF; x += 0.3) { const pk = new THREE.Mesh(pickGeo, mat2); pk.position.x = x; grp.add(pk); }
+    for (const y of [0.3, 0.62]) { const r = new THREE.Mesh(rail, mat2); r.scale.x = GATE_HALF * 2; r.position.set(0, y, -0.05); grp.add(r); }
+    scene.add(grp);
+    const pos = new Float32Array(GATE_PARTICLES * 3), colA = new Float32Array(GATE_PARTICLES * 3);
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(colA, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.34, map: sparkTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    pts.frustumCulled = false; pts.visible = false; scene.add(pts);
+    gates.push({ s: sIdx, fp, grp, mat: mat2, pts, pos, colA, open: 0, prev: null, active: false,
+      vel: new Float32Array(GATE_PARTICLES * 3), age: new Float32Array(GATE_PARTICLES), life: new Float32Array(GATE_PARTICLES), base: new Float32Array(GATE_PARTICLES * 3) });
+  });
+}
+
+function burst(gt) { // glitter cloud over the gate
+  const c = new THREE.Color();
+  for (let i = 0; i < GATE_PARTICLES; i++) {
+    gt.pos.set([gt.fp.x + rnd(-GATE_HALF, GATE_HALF), rnd(0.05, 1.1), gt.fp.z + rnd(-0.15, 0.15)], i * 3);
+    gt.vel.set([rnd(-0.25, 0.25), rnd(0.25, 0.9), rnd(-0.2, 0.2)], i * 3);
+    gt.age[i] = -rnd(0, 0.9); gt.life[i] = rnd(1.8, 3.2);
+    c.setHSL(rnd(0.08, 0.16) + (Math.random() < 0.3 ? rnd(-0.5, 0.4) : 0), rnd(0.4, 0.9), rnd(0.7, 0.9)); gt.base.set([c.r, c.g, c.b], i * 3);
+  }
+  gt.active = true; gt.pts.visible = true;
+  // ~10 butterflies pop out of the opening gate and flutter away quickly (created on first use)
+  if (!gt.bf) gt.bf = Array.from({ length: 10 }, () => {
+    const g = new THREE.Group(), wm = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(noGreen(rnd(0, 1)), 0.85, 0.62), side: THREE.DoubleSide });
+    const wings = [1, -1].map(d => { const w = new THREE.Mesh(wingGeo, wm); w.scale.set(d, 1, 1); g.add(w); return w; });
+    const body = new THREE.Mesh(beeGeo, new THREE.MeshBasicMaterial({ color: 0x4a3b32 })); body.scale.set(0.45, 0.4, 1.8); g.add(body);
+    g.visible = false; scene.add(g);
+    return { g, wings, vel: new THREE.Vector3(), age: 0, life: 3.5, ph: rnd(0, 6.28) };
+  });
+  for (const b of gt.bf) {
+    b.g.position.set(gt.fp.x + rnd(-0.9, 0.9), rnd(0.3, 1), gt.fp.z + rnd(-0.1, 0.1));
+    b.vel.set(rnd(-2.2, 2.2), rnd(0.6, 1.5), -rnd(1.6, 3.6)); // mostly onwards, up the path
+    b.age = -rnd(0, 0.7); b.life = rnd(3, 4.2); b.g.visible = true; b.g.scale.setScalar(0);
+  }
+  gt.bfActive = true;
+}
+const nodeFlash = Array(WAYPOINTS).fill(0), seqs = [];
+const hueOf = g => CLIMATE[g * SECTION + SECTION - 1] * 360;
+const GROW_WAIT = 2.6; // seconds the flowers get to grow before anything travels on
+function startSeq(gt) { seqs.push({ gt, t: -GROW_WAIT, i: 0, released: false }); }
+function updateSeqs(dt) {
+  for (let q = seqs.length - 1; q >= 0; q--) {
+    const sq = seqs[q]; sq.t += dt;
+    while (sq.i < SECTION && sq.t >= sq.i * 0.42) { const k = sq.gt.s * SECTION + sq.i; nodeFlash[k] = 1; ZGUI.chime(sq.i); viewTarget = clampView(wpPos[k].z - 4); sq.i++; } // bottom to top
+    if (!sq.released && sq.t >= SECTION * 0.42 + 0.7) {
+      sq.released = true; sq.gt.release = true; burst(sq.gt); ZGUI.fanfare(); viewTarget = clampView(sq.gt.fp.z - 3);
+      const g = sq.gt.s, all = [0, 1, 2, 3].every(x => ZGTasks.gardenComplete(prog, x) || done.slice(x * SECTION, (x + 1) * SECTION).every(Boolean));
+      const showTbl = after => setTimeout(() => ZGUI.showTable(ZGTasks.gardenSummary(prog, g), hueOf(g), { okText: all && g === 3 ? 'Weiter' : 'Weiter geht\'s', onClose: after }), 2600);
+      if (all && g === SECTIONS - 1) {
+        ZGFireworks.start({ seconds: 14, hues: CLIMATE_BASE, onSound: big => { ZGUI.tone(95, 0, 0.3, 0.06, 'triangle'); ZGUI.tone(900 + Math.random() * 900, 0.04, 0.14, 0.015); if (big) ZGUI.tone(60, 0, 0.5, 0.07, 'triangle'); },
+          onEnd: () => ZGUI.showTable(ZGTasks.gardenSummary(prog, g), hueOf(g), { okText: 'Weiter', onClose: () => ZGUI.showFinale([0, 1, 2, 3].map(x => ZGTasks.gardenSummary(prog, x)), hueOf(g)) }) });
+      } else showTbl();
+      seqs.splice(q, 1);
+    }
+  }
+}
+function updateGate(gt, dt, complete) {
+  if (gt.prev === null) { gt.open = complete ? 1 : 0; gt.release = complete; } // already solved when the page loads: no show
+  else if (complete && !gt.prev) startSeq(gt);
+  else if (!complete) gt.release = false;
+  gt.prev = complete;
+  gt.open += (((complete && gt.release) ? 1 : 0) - gt.open) * Math.min(1, dt * 1.8);
+  const dis = smooth(0.1, 0.95, gt.open);
+  gt.grp.visible = dis < 0.99;
+  gt.mat.opacity = 1 - dis; gt.grp.position.y = -0.5 * dis;
+  if (gt.bfActive) {
+    let any = false;
+    for (const b of gt.bf) {
+      b.age += dt;
+      if (b.age < 0) { any = true; continue; }
+      if (b.age > b.life) { b.g.visible = false; continue; }
+      any = true; const a = b.age;
+      b.g.position.addScaledVector(b.vel, dt);
+      b.g.position.x += Math.sin(a * 5 + b.ph) * 0.02; b.g.position.y += Math.sin(a * 7 + b.ph) * 0.012;
+      b.g.scale.setScalar(Math.min(1, a * 5) * Math.min(1, (b.life - a) / 0.8));
+      b.g.rotation.y = Math.atan2(-b.vel.z, b.vel.x);
+      const fl = Math.sin(a * 20 + b.ph) * 0.9; b.wings[0].rotation.z = fl; b.wings[1].rotation.z = -fl;
+    }
+    if (!any) gt.bfActive = false;
+  }
+  if (!gt.active) return;
+  let alive = false;
+  for (let i = 0; i < GATE_PARTICLES; i++) {
+    const a = gt.age[i] += dt, j = i * 3;
+    if (a < 0) { gt.colA[j] = gt.colA[j + 1] = gt.colA[j + 2] = 0; alive = true; continue; }
+    if (a > gt.life[i]) { gt.colA[j] = gt.colA[j + 1] = gt.colA[j + 2] = 0; continue; }
+    alive = true;
+    gt.pos[j] += gt.vel[j] * dt + Math.sin(a * 3 + i) * 0.004; gt.pos[j + 1] += gt.vel[j + 1] * dt; gt.pos[j + 2] += gt.vel[j + 2] * dt;
+    const k = (1 - a / gt.life[i]) * (0.55 + 0.45 * Math.sin(a * 16 + i * 3)); // fade + twinkle
+    gt.colA[j] = gt.base[j] * k; gt.colA[j + 1] = gt.base[j + 1] * k; gt.colA[j + 2] = gt.base[j + 2] * k;
+  }
+  gt.pts.geometry.attributes.position.needsUpdate = gt.pts.geometry.attributes.color.needsUpdate = true;
+  if (!alive) { gt.active = false; gt.pts.visible = false; }
+}
+const NODE_H = 0.3;
+const nodeGeo = new THREE.LatheGeometry([[0, 0], [NODE_R - 0.04, 0], [NODE_R, 0.05], [NODE_R, NODE_H - 0.1], [NODE_R - 0.05, NODE_H - 0.03], [NODE_R - 0.13, NODE_H], [0, NODE_H]].map(([r, y]) => new THREE.Vector2(r, y)), 56);
+function discMaterial() {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(0x555555) }, uGlow: { value: 0 } },
+    vertexShader: `varying vec3 vN; varying vec3 vP;
+      void main() { vN = normalize(mat3(modelMatrix) * normal); vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uGlow; varying vec3 vN; varying vec3 vP;
+      void main() {
+        vec3 n = normalize(vN);
+        float top = smoothstep(0.55, 0.95, n.y);                       // 1 on the flat top, 0 on the wall
+        float ndl = clamp(dot(n, normalize(vec3(-0.4, 0.8, 0.45))), 0.0, 1.0);
+        float r = clamp(length(vP.xz) / ${NODE_R.toFixed(2)}, 0.0, 1.0);
+        vec3 c = uColor * (0.55 + 0.5 * ndl);                          // lit top, darker wall
+        c *= 1.0 - 0.16 * smoothstep(0.5, 1.0, r) * top;               // slightly dished top: edge darker
+        c += uColor * 0.07 * (1.0 - r) * top;                          // soft highlight in the middle
+        c += uGlow * (0.45 * smoothstep(0.72, 1.0, r) * top + 0.1 * (1.0 - r) * top); // very faint rim glow
+        c *= 1.0 - 0.28 * (1.0 - top) * (1.0 - smoothstep(0.0, 0.1, vP.y / ${NODE_H.toFixed(2)})); // wall fades darker towards the ground
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
+  mat.color = mat.uniforms.uColor.value; // keeps the existing colour code working
+  return mat;
+}
+const starTex = (() => { // white star on transparent, tinted by material colour
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath();
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? 24 : 54, a = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(64 + Math.cos(a) * r, 66 + Math.sin(a) * r); }
+  g.closePath(); g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = '#fff'; g.stroke(); g.fill();
+  return new THREE.CanvasTexture(c);
+})();
+const starGeo = new THREE.PlaneGeometry(NODE_R * 1.1, NODE_R * 1.1).rotateX(-Math.PI / 2);
+const glyphGeo = new THREE.PlaneGeometry(NODE_R * 1.2, NODE_R * 1.2).rotateX(-Math.PI / 2);
+const glyphTex = id => { const c = document.createElement('canvas'); c.width = c.height = 128; ZGIcons.draw(c.getContext('2d'), id, 64, 64, 84, '#fff', 2.4); return new THREE.CanvasTexture(c); };
+// Texture helper
+const gradTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return new THREE.CanvasTexture(c); };
+const dotGeo = new THREE.CircleGeometry(0.095, 18).rotateX(-Math.PI / 2);
+// 5 dots on a ring, filled from the bottom upwards on both sides (right first, then left); the top dot is replaced by the star at 100 %
+const FACE = [36, -36, 108, -108, 180].map(d => [Math.sin(d * Math.PI / 180) * 0.44, -Math.cos(d * Math.PI / 180) * 0.44]); // x right, y up on screen
+const nodes = wpPos.map(p => {
+  const disc = new THREE.Mesh(nodeGeo, discMaterial());
+  const star = new THREE.Mesh(starGeo, new THREE.MeshBasicMaterial({ map:starTex, transparent:true, color:0x808080 }));
+  const glyph = new THREE.Mesh(glyphGeo, new THREE.MeshBasicMaterial({ map: glyphTex(ZGTasks.PLAN[wpPos.indexOf(p)].icon), transparent: true, color: 0x808080 }));
+  glyph.position.copy(p).setY(NODE_H + 0.02);
+  disc.position.copy(p); star.position.set(p.x, NODE_H + 0.035, p.z - 0.44); star.scale.setScalar(0.0001); scene.add(disc, star, glyph);
+  const dots = FACE.map(([fx, fy], j) => {
+    const d = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff })); d.position.set(p.x + fx, NODE_H + 0.03, p.z - fy);
+    d.userData.sc = 1; d.scale.setScalar(0.0001); scene.add(d); return d;
+  });
+  return { disc: disc.material, discMesh: disc, star: star.material, starMesh: star, glyph: glyph.material, dots, cnt: 1 };
+});
+const GOLD = new THREE.Color(0xf2b705), GREY = new THREE.Color(0x555555), STAR_GREY = new THREE.Color(0xa6a6a6), GOLDW = new THREE.Color(0.95, 0.95, 1), lightC = new THREE.Color(), STAR_NEXT = new THREE.Color(0x8a8f99), WHITE = new THREE.Color(0xffffff),
+      PALE = new THREE.Color(0xb7e0a8), STRONG = new THREE.Color(0x1fa84a), tmpC = new THREE.Color();
+
+// Butterflies and bees: appear over meadows with a great result (>= 80), up to 6 per waypoint
+const wingGeo = new THREE.PlaneGeometry(0.34, 0.26).rotateX(-Math.PI / 2).translate(0.17, 0, 0);
+const beeGeo = new THREE.SphereGeometry(0.1, 10, 8);
+const critters = [];
+for (let k = 0; k < WAYPOINTS; k++) for (let j = 0; j < 6; j++) {
+  const bee = j % 3 === 2, g = new THREE.Group(), wings = [];
+  const hue = CLIMATE[k];
+  const wingMat = new THREE.MeshBasicMaterial({ color: bee ? 0xffffff : new THREE.Color().setHSL(hue, 0.9, 0.6), side: THREE.DoubleSide, transparent: true, opacity: bee ? 0.6 : 1 });
+  for (const d of [1, -1]) { const w = new THREE.Mesh(wingGeo, wingMat); w.scale.set(d * (bee ? 0.55 : 1), 1, bee ? 0.6 : 1); g.add(w); wings.push(w); }
+  const body = new THREE.Mesh(beeGeo, new THREE.MeshBasicMaterial({ color: bee ? 0xf2b800 : 0x4a3b32 }));
+  body.scale.set(bee ? 1.1 : 0.45, bee ? 0.9 : 0.4, bee ? 1.5 : 1.8); g.add(body);
+  g.scale.setScalar(0); scene.add(g);
+  critters.push({ g, wings, k, need: 80 + j * 3.4, s: 0, bee, ph: rnd(0, 6.28), sp: rnd(0.35, 0.7) * (bee ? 1.6 : 1),
+                  rx: rnd(1.5, 4.2), rz: rnd(0.8, 1.6), hy: rnd(1.3, 2.4), px: 0, pz: 0 });
+}
+
+// Floating arrow above the next open waypoint (replaces its star)
+const arrow = new THREE.Group();
+const arrowTex = gradTex(128, 192, (g, w, h) => { // chunky down arrow, drawn flat so it always faces the camera
+  g.fillStyle = '#fff'; g.lineJoin = 'round'; g.lineWidth = 14; g.strokeStyle = '#fff'; g.beginPath();
+  g.moveTo(44, 14); g.lineTo(84, 14); g.lineTo(84, 90); g.lineTo(116, 90); g.lineTo(64, 178); g.lineTo(12, 90); g.lineTo(44, 90); g.closePath(); g.stroke(); g.fill(); });
+const shaft = new THREE.Sprite(new THREE.SpriteMaterial({ map: arrowTex })); shaft.scale.set(0.95, 1.4, 1); shaft.position.y = 0.7; // tip ends at group origin
+const head = new THREE.Object3D();
+const glowTex = gradTex(128, 128, (g, w) => { const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,.35)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+const haloMat = () => new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true, opacity: 0.3 }); // no depth test: a billboard glow would be cut by the ground (hard edge)
+const arrowGlow = new THREE.Sprite(haloMat()); arrowGlow.scale.setScalar(2.6); arrowGlow.position.y = 0.7;
+const nodeHalo = new THREE.Sprite(haloMat()); nodeHalo.scale.setScalar(3.2); nodeHalo.renderOrder = 5; arrowGlow.renderOrder = 5; nodeHalo.visible = false; scene.add(nodeHalo);
+arrow.add(arrowGlow, shaft, head);
+const flies = Array.from({ length: 9 }, () => {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xdcf56a, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true, opacity: 0.8 }));
+  sp.scale.setScalar(0.3); sp.renderOrder = 6; sp.visible = false; scene.add(sp);
+  return { sp, ph: rnd(0, 6.28), sx: rnd(0.5, 1.2), sz: rnd(0.45, 1.1), sy: rnd(0.6, 1.4), rx: rnd(0.6, 1.2), rz: rnd(0.5, 1.0), ry: rnd(0.3, 0.8), f: rnd(1.5, 3.2) };
+});
+function updateFlies(t, nextK) { // a few fireflies always dance around the arrow
+  flies.forEach(f => {
+    f.sp.visible = nextK >= 0; if (nextK < 0) return;
+    f.sp.position.set(arrow.position.x + Math.cos(t * f.sx + f.ph) * f.rx + Math.sin(t * 1.7 + f.ph) * 0.15, 1.0 + f.ry + Math.sin(t * f.sy + f.ph) * 0.4, arrow.position.z + Math.sin(t * f.sz + f.ph) * f.rz);
+    f.sp.material.opacity = 0.25 + 0.65 * Math.max(0, Math.sin(t * f.f + f.ph));
+  });
+} arrow.scale.setScalar(1.2); arrow.visible = false; scene.add(arrow);
+
+// Witch cottage: round plaster house, crooked purple roof, glowing window, chimney smoke, pumpkin, mushrooms, cauldron, lantern
+const house = new THREE.Group(); house.position.copy(HOUSE); scene.add(house);
+const LM = c => lit(new THREE.MeshLambertMaterial({ color: c }));
+const part = (geo, mat, x, y, z, rot) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rot) m.rotation.set(rot[0], rot[1], rot[2]); house.add(m); return m; };
+part(new THREE.CylinderGeometry(1.08, 1.2, 1.9, 18), LM(0xf3e6cf), 0, 0.95, 0);
+part(new THREE.CylinderGeometry(1.28, 1.32, 0.18, 18), LM(0xb9b0a4), 0, 0.09, 0);                       // stone base
+part(new THREE.CylinderGeometry(1.42, 1.42, 0.1, 22), LM(0x5f3a8c), 0, 1.92, 0, [0, 0, 0.04]);              // roof brim
+part(new THREE.ConeGeometry(1.28, 1.8, 20), LM(0x7b4fb0), 0, 2.85, 0, [0, 0, 0.05]);                     // roof
+part(new THREE.ConeGeometry(0.3, 1.0, 12), LM(0x7b4fb0), 0.25, 3.95, 0, [0, 0, -0.62]);                  // crooked tip
+part(new THREE.SphereGeometry(0.1, 10, 8), LM(0xffd35a), 0.68, 4.33, 0); // star-gold bobble
+part(new THREE.BoxGeometry(0.5, 0.8, 0.1), LM(0x8a5a3c), 0, 0.42, 1.1);                                  // door
+part(new THREE.CylinderGeometry(0.25, 0.25, 0.1, 14), LM(0x8a5a3c), 0, 0.82, 1.1, [Math.PI / 2, 0, 0]);  // arch
+part(new THREE.SphereGeometry(0.04, 8, 6), LM(0xf3d57a), 0.15, 0.42, 1.17);
+const winMat = new THREE.MeshBasicMaterial({ color: 0x1b1c24 }), winGeo = new THREE.CircleGeometry(0.24, 20);
+const winFrame = new THREE.TorusGeometry(0.25, 0.04, 6, 20), frameMat = LM(0x8a5a3c);
+[[-0.62, 1.05], [0.66, 1.05]].forEach(([a, y], i) => {                                                      // two round windows
+  const x = Math.sin(a) * 1.12, z = Math.cos(a) * 1.12;
+  const w = part(winGeo, winMat, x, y + 0.1, z + 0.02, [0, a, 0]); const fr = part(winFrame, frameMat, x, y + 0.1, z + 0.02, [0, a, 0]);
+  w.userData.win = true;
+});
+part(new THREE.CylinderGeometry(0.17, 0.2, 0.7, 10), LM(0xa45a4a), 0.62, 2.7, -0.25);                    // chimney
+part(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 10), LM(0x7a3f33), 0.62, 3.07, -0.25);
+const pumpkin = part(new THREE.SphereGeometry(0.3, 14, 10), LM(0xf08a24), 1.55, 0.24, 1.15); pumpkin.scale.set(1, 0.78, 1);
+part(new THREE.CylinderGeometry(0.04, 0.05, 0.14, 6), LM(0x4b7a3a), 1.55, 0.5, 1.15);
+[[-1.55, 1.15, 1], [-1.95, 0.55, 0.75], [1.95, 0.35, 0.85], [-1.2, 1.6, 0.6]].forEach(([x, z, sc]) => {        // mushrooms
+  part(new THREE.CylinderGeometry(0.07 * sc, 0.09 * sc, 0.26 * sc, 8), LM(0xf4ecd8), x, 0.13 * sc, z);
+  part(new THREE.SphereGeometry(0.26 * sc, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), LM(0xd8442f), x, 0.26 * sc, z);
+  [[0.1, 0.1], [-0.12, 0.05], [0.02, -0.14]].forEach(([dx, dz]) => part(new THREE.SphereGeometry(0.035 * sc, 6, 5), LM(0xffffff), x + dx * sc, 0.4 * sc, z + dz * sc));
+});
+part(new THREE.SphereGeometry(0.34, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.68), LM(0x2b2b33), 1.15, 0.3, 1.75);   // cauldron
+part(new THREE.CircleGeometry(0.22, 14).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8be37a }), 1.15, 0.5, 1.75);
+part(new THREE.CylinderGeometry(0.035, 0.035, 1.2, 6), LM(0x6b4a30), -1.2, 0.6, 1.5);                         // lantern post
+const lantern = part(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0x2a2b33 }), -1.2, 1.28, 1.5);
+part(new THREE.CylinderGeometry(0.02, 0.02, 1.4, 5), LM(0x8a6a40), 0.95, 0.7, 0.62, [0, 0, 0.35]);            // broom stick
+part(new THREE.ConeGeometry(0.17, 0.4, 8), LM(0xd9b45a), 0.52, 0.12, 0.62, [0, 0, 1.2]);                       // broom bristles
+const glowTexH = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const houseGlows = [[-0.62, 1.15], [0.66, 1.15]].map(([a, y]) => {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexH, color: 0xffc766, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true, opacity: 0.35 }));
+  sp.scale.setScalar(1.3); sp.position.set(Math.sin(a) * 1.2, y, Math.cos(a) * 1.2); sp.renderOrder = 5; house.add(sp); return sp; });
+const lanternGlow = new THREE.Sprite(houseGlows[0].material.clone()); lanternGlow.scale.setScalar(0.9); lanternGlow.position.set(-1.2, 1.28, 1.5); lanternGlow.renderOrder = 5; house.add(lanternGlow);
+// chimney smoke: grey puffs that rise, drift and fade into the dark background
+const SMOKE_N = 22, smokePos = new Float32Array(SMOKE_N * 3), smokeCol = new Float32Array(SMOKE_N * 3), smokeAge = new Float32Array(SMOKE_N).map(() => rnd(0, 4));
+const smokeGeo = new THREE.BufferGeometry(); smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3)); smokeGeo.setAttribute('color', new THREE.BufferAttribute(smokeCol, 3));
+const smoke = new THREE.Points(smokeGeo, new THREE.PointsMaterial({ size: 0.5, map: glowTexH, vertexColors: true, transparent: true, depthWrite: false, opacity: 0.55 }));
+smoke.frustumCulled = false; house.add(smoke);
+let houseOn = 0; // 0 = dark house, 1 = lit; eases up once the path's end has been reached
+const WIN_DARK = new THREE.Color(0x1b1c24), WIN_LIT = new THREE.Color(0xffd27a), LAN_DARK = new THREE.Color(0x2a2b33), LAN_LIT = new THREE.Color(0xffe09a);
+function updateHouse(t, dt, reached) {
+  houseOn += ((reached ? 1 : 0) - houseOn) * Math.min(1, dt * 0.7);
+  for (let i = 0; i < SMOKE_N; i++) {
+    smokeAge[i] += dt; if (smokeAge[i] > 4) smokeAge[i] = 0; const a = smokeAge[i], j = i * 3;
+    smokePos[j] = 0.62 + Math.sin(a * 1.3 + i) * 0.12 + a * 0.18; smokePos[j + 1] = 3.15 + a * 0.55; smokePos[j + 2] = -0.25 + Math.cos(a * 1.1 + i) * 0.08;
+    const k = Math.max(0, 1 - a / 4) * 0.55 * houseOn; smokeCol[j] = 0.05 + k * 0.7; smokeCol[j + 1] = 0.05 + k * 0.7; smokeCol[j + 2] = 0.06 + k * 0.75;
+  }
+  smokeGeo.attributes.position.needsUpdate = smokeGeo.attributes.color.needsUpdate = true;
+  smoke.visible = houseOn > 0.02;
+  const fl = 0.85 + 0.15 * Math.sin(t * 5.3) * Math.sin(t * 3.1);          // warm flicker
+  winMat.color.copy(WIN_DARK).lerp(WIN_LIT, houseOn); lantern.material.color.copy(LAN_DARK).lerp(LAN_LIT, houseOn);
+  houseGlows.forEach(g => { g.material.opacity = 0.55 * houseOn * fl; }); lanternGlow.material.opacity = 0.6 * houseOn * fl;
+  lightU.uInt.value[WAYPOINTS] += ((0.04 + 1.2 * houseOn * fl) - lightU.uInt.value[WAYPOINTS]) * Math.min(1, dt * 3);
+}
+lightU.uLCol.value[WAYPOINTS].setRGB(1, 0.78, 0.5);
+
+// Flowers: thin stem + ball head, rigid pins that tilt around their base.
+const stemGeo = new THREE.CylinderGeometry(0.028, 0.028, 1, 5).translate(0, 0.5, 0);
+// One head shape per garden: ball, tulip, daisy (flat), hanging bell. All roughly unit size, origin at the stem tip.
+const lathe = pts => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 14);
+const daisyShape = new THREE.Shape();
+for (let i = 0; i <= 56; i++) { const a = i / 56 * Math.PI * 2, r = 0.7 + 0.7 * Math.pow(Math.abs(Math.cos(a * 3.5)), 0.8); i ? daisyShape.lineTo(Math.cos(a) * r, Math.sin(a) * r) : daisyShape.moveTo(r, 0); }
+const HEAD_GEOS = [
+  new THREE.SphereGeometry(1, 12, 8),
+  lathe([[0, -0.7], [0.5, -0.55], [0.82, -0.05], [0.75, 0.55], [0.4, 1.05], [0, 1.35]]).translate(0, 0.3, 0),
+  new THREE.ShapeGeometry(daisyShape).rotateX(-Math.PI / 2).scale(1.5, 1.5, 1.5),
+  lathe([[0, 0.45], [0.28, 0.4], [0.55, 0], [0.82, -0.55], [1.05, -1.0], [0.9, -1.05]]).translate(0, 0.1, 0).scale(1.4, 1.4, 1.4)
+];
+const SEG = 6;
+const stems = new THREE.InstancedMesh(stemGeo, lit(new THREE.MeshBasicMaterial()), N * SEG);
+const PER_SEC = SECTION * PER_WP;
+const headMeshes = HEAD_GEOS.map(g => new THREE.InstancedMesh(g, lit(new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })), PER_SEC));
+const headOf = k => headMeshes[Math.floor(k / SECTION)], headIdx = i => i % PER_SEC;
+stems.frustumCulled = false; headMeshes.forEach(h => { h.frustumCulled = false; });
+scene.add(stems, ...headMeshes);
+
+const gauss = () => (Math.random() + Math.random() + Math.random()) / 3 * 2 - 1;
+const flowers = [];
+const col = new THREE.Color(), stemCol = new THREE.Color();
+for (let k = 0; k < WAYPOINTS; k++) {
+  for (let j = 0; j < PER_WP; j++) {
+    const sec = Math.floor(k / SECTION), rank = Math.random(), side = Math.random() < 0.5 ? -1 : 1;
+    let x, z;
+    do { // low rank = close to the path, high rank = far out, so good results spread wide; clear around nodes
+      const c = curve.getPoint(Math.min(1, Math.max(0, (k + rnd(-0.55, 0.55)) / (WAYPOINTS - 1))));
+      x = c.x + side * (0.5 + rank * rnd(0.6, 1) * 5.4); z = c.z + gauss() * 1.5;
+    } while (wpPos.some(p => Math.hypot(p.x - x, p.z - z) < CLEAR_R) || nearPath(x, z) || (sec > 0 && z > fenceAt[sec - 1].z - 0.7) || z < fenceAt[sec].z + 0.7);
+    const h = rnd(0.5, 1.3);
+    const u = rnd(-1, 1); // personal position within the climate's hue range
+    col.setHSL((CLIMATE[k] + u * 0.03 + 1) % 1, 0.85, 0.55);
+    const i = k * PER_WP + j;
+    headOf(k).setColorAt(headIdx(i), col); stemCol.setHSL(rnd(0.27, 0.36), 0.6, rnd(0.32, 0.42)); for (let s = 0; s < SEG; s++) stems.setColorAt(i * SEG + s, stemCol);
+    flowers.push({
+      i, u, k, x, z, h, hr: rnd(0.09, 0.16), rank, dr: rnd(0, 6.28),
+      g: 0, wait: 0, on: false, tx: 0, tz: 0, vx: 0, vz: 0, ph: rnd(0, 6.28)
+    });
+  }
+}
+
+const zeroM = new THREE.Matrix4().makeScale(0, 0, 0); // flowers far away are not updated every frame, so start hidden
+for (let i = 0; i < N * SEG; i++) stems.setMatrixAt(i, zeroM);
+headMeshes.forEach(h => { for (let i = 0; i < PER_SEC; i++) h.setMatrixAt(i, zeroM); });
+
+// Fake shadows: every flower casts a shadow away from the strongest nearby waypoint light (multiplied onto the ground, strength follows the light)
+const shadowMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.MultiplyBlending, premultipliedAlpha: true, depthWrite: false });
+const shStem = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 0.07).rotateX(-Math.PI / 2).translate(0.5, 0, 0), shadowMat(), N);
+const shHead = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 12).rotateX(-Math.PI / 2), shadowMat(), N);
+for (const sm of [shStem, shHead]) { sm.frustumCulled = false; sm.renderOrder = 1; for (let i = 0; i < N; i++) { sm.setMatrixAt(i, zeroM); sm.setColorAt(i, new THREE.Color(1, 1, 1)); } scene.add(sm); }
+const AXIS_Y = new THREE.Vector3(0, 1, 0), qs = new THREE.Quaternion(), shCol = new THREE.Color(), LAMP_H = 3.8;
+
+// Controls
+const $ = id => document.getElementById(id);
+const pct = Array(WAYPOINTS).fill(60);   // flower amount per done waypoint, 10–100 (never 0)
+const done = Array.from({ length: WAYPOINTS }, (_, k) => k < 5); // grey = not done yet
+const peak = Array(WAYPOINTS).fill(0);  // best result so far per waypoint; meadow never shrinks
+// share of the 200 flowers per waypoint: linear from 50 % up, but falling off steeply below 50 % (10 % → ~3 flowers)
+const frac = v => v >= 50 ? v / 100 : Math.max(0.015, 0.5 * Math.pow(v / 50, 2.2));
+const eff = k => $('keep').checked ? peak[k] : pct[k];
+const pcur = pct.slice();                 // eased copy → smooth droop / colour changes
+let wind = 0.5;
+function readControls() {
+  wind = $('wind').value / 100;
+  $('windv').textContent = Math.round(wind * 100) + ' %';
+}
+$('wind').oninput = readControls; readControls();
+const sliders = [];
+const show = k => { const { inp, out } = sliders[k]; out.textContent = peak[k] > pct[k] && $('keep').checked ? `${inp.value}▲${peak[k]}` : inp.value; };
+for (let k = WAYPOINTS - 1; k >= 0; k--) { // top of the list = top of the path
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" ${done[k] ? 'checked' : ''}>${k + 1}<input type="range" min="10" max="100" value="60"><output>60</output>`;
+  l.dataset.sec = Math.floor(k / SECTION);
+  const [cb, inp, out] = l.children;
+  sliders[k] = { cb, inp, out };
+  const upd = () => { done[k] = cb.checked; inp.disabled = !cb.checked; peak[k] = done[k] ? Math.max(peak[k], pct[k]) : 0; show(k); };
+  cb.onchange = upd;
+  inp.oninput = () => { pct[k] = +inp.value; peak[k] = Math.max(peak[k], pct[k]); show(k); };
+  upd(); $('wps').appendChild(l);
+}
+let curSec = 0;
+$('finish').onclick = () => { const rows = [...$('wps').children].filter(l => +l.dataset.sec === curSec), all = rows.every(l => l.children[0].checked); rows.forEach(l => { l.children[0].checked = !all; l.children[0].onchange(); }); };
+const selSec = n => { curSec = n; [...$('wps').children].forEach(l => l.classList.toggle('off', +l.dataset.sec !== n)); [...$('tabs').children].forEach((b, i) => b.classList.toggle('on', i === n)); };
+for (let n = 0; n < SECTIONS; n++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Garten ' + (n + 1); b.onclick = () => selSec(n); $('tabs').appendChild(b); }
+selSec(0);
+const PR_KEY = 'zg_lab_state';
+let prog = (() => { try { const j = JSON.parse(localStorage.getItem(PR_KEY)); if (j && j.v === 1 && j.done.length === WAYPOINTS) return j; } catch (e) { /* fresh start */ } return ZGTasks.emptyProgress(); })();
+const saveProg = () => { try { localStorage.setItem(PR_KEY, JSON.stringify(prog)); } catch (e) { /* private mode */ } };
+function hydrate(k) { done[k] = prog.done[k]; pct[k] = prog.pct[k]; peak[k] = prog.peak[k]; const sl = sliders[k]; sl.cb.checked = done[k]; sl.inp.value = pct[k]; sl.inp.disabled = !done[k]; show(k); }
+for (let k = 0; k < WAYPOINTS; k++) { hydrate(k); pcur[k] = Math.max(10, eff(k)); }
+function commitResult(k, pctv, perfect) {
+  holdUntil = performance.now() + GROW_WAIT * 1000; viewTarget = clampView(wpPos[k].z - 4); // first watch the flowers grow here
+  ZGTasks.recordResult(prog, k, pctv, perfect); saveProg(); hydrate(k);
+}
+const wipeProgress = () => { try { localStorage.removeItem(PR_KEY); } catch (e) { /* ignore */ } location.reload(); };
+$('all').oninput = () => sliders.forEach(({ inp }, k) => { inp.value = pct[k] = +$('all').value; if (done[k]) peak[k] = Math.max(peak[k], pct[k]); show(k); });
+$('reset').onclick = () => sliders.forEach((_, k) => { peak[k] = done[k] ? pct[k] : 0; show(k); });
+$('keep').onchange = () => sliders.forEach((_, k) => show(k));
+
+// Pointer → ground plane
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
+let touch = null;
+function setPointer(e) {
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight * 2 - 1));
+  ray.setFromCamera(ndc, camera);
+  touch = ray.ray.intersectPlane(plane, hit) ? { x:hit.x, z:hit.z } : null;
+}
+canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) setPointer(e); });
+canvas.addEventListener('pointerdown', setPointer);
+const clearPointer = () => { touch = null; };
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+canvas.addEventListener('pointerleave', clearPointer);
+
+// View scrolls along the path: wheel, two fingers or the slider; follows the arrow when the next waypoint changes
+const VIEW_START = wpPos[0].z - 4, VIEW_END = HOUSE.z + 1;
+const clampView = z => Math.min(VIEW_START, Math.max(VIEW_END, z));
+let viewZ = clampView(wpPos[Math.max(0, done.indexOf(false))].z - 4), viewTarget = viewZ, lastNext = -2;
+function updateCamera() {
+  const el = 0.95, half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); // steep view so the path reads bottom to top
+  const d = Math.max(13.5 / half * 0.95, 9.5 / camera.aspect / half);
+  camera.position.set(0, Math.sin(el) * d, viewZ + Math.cos(el) * d);
+  camera.lookAt(0, 0, viewZ + 3.4);
+}
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix(); updateCamera();
+}
+canvas.addEventListener('wheel', e => { e.preventDefault(); viewTarget = clampView(viewTarget + e.deltaY * 0.03); }, { passive: false });
+$('view').oninput = () => { viewTarget = VIEW_START + (VIEW_END - VIEW_START) * $('view').value / 1000; };
+const fingers = new Map(); // two-finger drag scrolls instead of petting
+canvas.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') fingers.set(e.pointerId, e.clientY); });
+const dropFinger = e => fingers.delete(e.pointerId);
+canvas.addEventListener('pointerup', dropFinger); canvas.addEventListener('pointercancel', dropFinger);
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'touch' || !fingers.has(e.pointerId)) return;
+  const dy = e.clientY - fingers.get(e.pointerId); fingers.set(e.pointerId, e.clientY);
+  if (fingers.size >= 2) { viewTarget = clampView(viewTarget + dy * 0.05); touch = null; }
+});
+// Tap a waypoint: short description. Press and hold: a ring closes around it, then the exercise starts.
+const TOPICS = ['Zahlen im Zahlenraum 20', 'Verliebte Zahlen (Summe 10)', 'Plus bis 10', 'Minus bis 10', 'Verdoppeln', 'Zehnerübergang plus', 'Zehnerübergang minus', 'Mix-Challenge'];
+const info = k => { const n = ZGTasks.PLAN[k]; return { title: `${k + 1} · ${n.title}`, text: n.blurb }; };
+const isLocked = k => !done[k] && k !== done.indexOf(false);
+const LONG_MS = 750, RING_FROM = 200, TAP_MS = 350;
+const tipEl = $('tip'); let tipK = -1, tipUntil = 0, press = null, exK = -1;
+function showTip(k) {
+  const i = info(k), st = isLocked(k) ? 'Noch gesperrt' : done[k] ? `Geschafft: ${eff(k)} %` : '';
+  tipEl.innerHTML = `<b>${i.title}</b>${i.text}${st ? `<small>${st}</small>` : ''}${isLocked(k) ? '' : '<button class="zg-btn primary" type="button">Übung starten</button>'}`;
+  tipEl.style.setProperty('--h', Math.round(CLIMATE[k] * 360));
+  const go = tipEl.querySelector('button'); if (go) go.onclick = () => startExercise(k);
+  tipK = k; tipUntil = performance.now() + 8000; tipEl.hidden = false;
+}
+const hideTip = () => { tipK = -1; tipEl.hidden = true; };
+const ring = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+ring.visible = false; scene.add(ring);
+const nodeAt = () => { let best = -1, bd = 1.1; if (touch) wpPos.forEach((p, k) => { const d = Math.hypot(p.x - touch.x, p.z - touch.z); if (d < bd) { bd = d; best = k; } }); return best; };
+const cancelPress = () => { press = null; ring.visible = false; };
+function startExercise(k) {
+  exK = k; hideTip(); if (navigator.vibrate) navigator.vibrate(30);
+  ZGUI.runRound(k, { hue: CLIMATE[k] * 360, onFinish: (pctv, perfect, again) => { commitResult(k, pctv, perfect); if (again) setTimeout(() => startExercise(k), 400); } });
+}
+let gatePress = null;
+canvas.addEventListener('pointerdown', e => { gatePress = null; if (touch) for (const gt of gates) if (Math.abs(touch.x - gt.fp.x) < 1.5 && Math.abs(touch.z - gt.fp.z) < 0.8) gatePress = { gt, t0: performance.now() }; });
+canvas.addEventListener('pointerup', () => {
+  if (gatePress && performance.now() - gatePress.t0 < TAP_MS) { const g = gatePress.gt.s; ZGUI.showTable(ZGTasks.gardenSummary(prog, g), hueOf(g), { okText: 'Zurück' }); }
+  gatePress = null;
+});
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch' && fingers.size >= 2) return cancelPress();
+  hideTip(); const k = nodeAt();
+  if (k >= 0) { press = { k, t0: performance.now(), x: e.clientX, y: e.clientY }; touch = null; }
+});
+canvas.addEventListener('pointermove', e => {
+  if (press) { touch = null; if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > 14) cancelPress(); }
+  else if (e.pointerType === 'mouse') canvas.style.cursor = nodeAt() >= 0 ? 'pointer' : '';
+});
+canvas.addEventListener('pointerup', () => {
+  if (press && performance.now() - press.t0 < TAP_MS) showTip(press.k);
+  cancelPress();
+});
+canvas.addEventListener('pointercancel', cancelPress);
+function updatePress(now) {
+  if (press) {
+    const el = now - press.t0, pr = Math.min(1, (el - RING_FROM) / (LONG_MS - RING_FROM));
+    if (pr > 0 && !isLocked(press.k)) {
+      ring.visible = true; ring.position.set(wpPos[press.k].x, 0.03, wpPos[press.k].z);
+      ring.geometry.dispose(); ring.geometry = new THREE.RingGeometry(0.88, 1.02, 48, 1, Math.PI / 2, Math.max(0.01, pr * Math.PI * 2)).rotateX(-Math.PI / 2);
+      if (pr >= 1) { const k = press.k; cancelPress(); startExercise(k); }
+    }
+  }
+  if (tipK >= 0) {
+    if (now > tipUntil) hideTip();
+    else {
+      const v = new THREE.Vector3(wpPos[tipK].x, 1.4, wpPos[tipK].z).project(camera);
+      tipEl.style.left = Math.min(innerWidth - 120, Math.max(120, (v.x * 0.5 + 0.5) * innerWidth)) + 'px';
+      tipEl.style.top = (-v.y * 0.5 + 0.5) * innerHeight + 'px';
+    }
+  }
+}
+addEventListener('resize', resize); resize();
+
+const easeOutBack = t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const clamp01 = v => Math.min(1, Math.max(0, v));
+const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+
+const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(),
+      pos = new THREE.Vector3(), sc = new THREE.Vector3(), tip = new THREE.Vector3(), up = new THREE.Vector3();
+// never let a hue drift into green
+const noGreen = h => h > 0.17 && h < 0.5 ? (h < 0.335 ? 0.17 : 0.5) : h;
+const colP = Array(WAYPOINTS).fill(-99);
+let last = performance.now(), t = 0, holdUntil = 0, shownNext = -2;
+
+// Background sound: starts with the first touch/click (browser rule), very quiet, fades in and out and starts over
+const bg = new Audio('bg-sound.mp3'); bg.preload = 'auto';
+const BG_VOL = 0.1, BG_FADE = 3; // max volume, fade seconds at start and end
+let bgStarted = false;
+function bgStart() {
+  if (bgStarted) return; bgStarted = true; bg.volume = 0;
+  bg.play().catch(() => { bgStarted = false; }); // blocked → try again on the next gesture
+}
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => addEventListener(ev, bgStart, { passive: true }));
+bg.addEventListener('ended', () => { bg.currentTime = 0; bg.play(); });
+// round buttons that stay on the garden: sound on/off and the adult menu (everything else is inside the menu)
+const NAME_KEY = 'zg_lab_name';
+let playerName = ''; try { playerName = localStorage.getItem(NAME_KEY) || ''; } catch (e) { /* private mode */ }
+ZGUI.setName(playerName);
+let soundMuted = false; try { soundMuted = localStorage.getItem('zg_lab_mute') === '1'; } catch (e) { /* private mode */ }
+bg.muted = soundMuted;
+const fabs = $('fabs'), fab = (id, label) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'zg-btn icon'; b.setAttribute('aria-label', label); b.id = id; fabs.appendChild(b); return b; };
+const sndBtn = fab('snd', 'Ton'), menuBtn = fab('menu', 'Menü');
+const drawSnd = () => { sndBtn.innerHTML = ZGIcons.svg(bg.muted ? 'soundoff' : 'sound'); sndBtn.setAttribute('aria-pressed', bg.muted ? 'true' : 'false'); }; drawSnd();
+menuBtn.innerHTML = ZGIcons.svg('menu');
+sndBtn.onclick = () => { bg.muted = !bg.muted; try { localStorage.setItem('zg_lab_mute', bg.muted ? '1' : '0'); } catch (e) { /* private mode */ } drawSnd(); };
+const nameHue = CLIMATE[0] * 360;
+const setNameCard = cancelable => ZGUI.askName(nameHue, playerName, n => { playerName = n; try { localStorage.setItem(NAME_KEY, n); } catch (e) { /* private mode */ } }, cancelable ? () => {} : null);
+menuBtn.onclick = () => ZGUI.showMenu(nameHue, {
+  name: playerName, devOn: !$('panel').hidden,
+  onName: () => setNameCard(true),
+  onScores: () => ZGUI.showScores([0, 1, 2, 3].map(x => ZGTasks.gardenSummary(prog, x)), nameHue),
+  onDev: () => { $('panel').hidden = !$('panel').hidden; },
+  onWipe: wipeProgress
+});
+if (!playerName) setNameCard(false); // the first start asks for the child's name
+function bgUpdate() {
+  if (!bgStarted || bg.paused) return;
+  const d = bg.duration || 0; let v = Math.min(1, bg.currentTime / BG_FADE);
+  if (d) v = Math.min(v, Math.max(0, (d - bg.currentTime) / BG_FADE));
+  bg.volume = BG_VOL * v;
+}
+
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now; t += dt;
+  const gate = smooth(0.35, 0.95, 0.5 + 0.5 * Math.sin(t * 0.55) * 0.7 + 0.3 * Math.sin(t * 1.31 + 1));
+  let visible = 0, recolored = false;
+  updatePress(now); bgUpdate();
+  const realNext = done.indexOf(false);
+  if (shownNext === -2) shownNext = realNext;
+  if (realNext !== shownNext && performance.now() >= holdUntil) shownNext = realNext; // arrow, light and camera move on only after the flowers have grown
+  const nextK = shownNext;
+  if (nextK !== lastNext) { lastNext = nextK; viewTarget = clampView((nextK >= 0 ? wpPos[nextK].z : wpPos[WAYPOINTS - 1].z) - 4); }
+  viewZ += (viewTarget - viewZ) * Math.min(1, dt * 5); updateCamera();
+  if (document.activeElement !== $('view')) $('view').value = (VIEW_START - viewZ) / (VIEW_START - VIEW_END) * 1000;
+  arrow.visible = nodeHalo.visible = nextK >= 0;
+  if (nextK >= 0) {
+    const tp = wpPos[nextK], first = arrow.position.lengthSq() === 0;
+    arrow.position.x += (tp.x - arrow.position.x) * (first ? 1 : Math.min(1, dt * 6));
+    arrow.position.z += (tp.z - arrow.position.z) * (first ? 1 : Math.min(1, dt * 6));
+    arrow.position.y = 1.3 + 0.3 * Math.sin(t * 3); // bobbing
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.2); // slow, subtle breathing
+    const gc = lightC.setHSL(CLIMATE[nextK], 0.9, 0.55), kc = Math.min(1, dt * 6); // glow in the colour the waypoint will get
+    arrowGlow.material.color.lerp(gc, kc); nodeHalo.material.color.copy(arrowGlow.material.color).lerp(WHITE, 0.5);
+    shaft.material.color.lerp(tmpC.copy(WHITE).lerp(gc, 0.3), kc);
+    arrowGlow.material.opacity = 0.55 + 0.15 * pulse; nodeHalo.material.opacity = 0.32 + 0.1 * pulse;
+    nodeHalo.position.set(tp.x, 0.3, tp.z);
+  }
+  updateHouse(t, dt, done.every(Boolean) && gates[SECTIONS - 1].release); updateSeqs(dt); updateFlies(t, nextK);
+  for (const gt of gates) updateGate(gt, dt, done.slice(gt.s * SECTION, (gt.s + 1) * SECTION).every(Boolean));
+  for (let k = 0; k < WAYPOINTS; k++) {
+    pcur[k] += (Math.max(eff(k), 10) - pcur[k]) * Math.min(1, dt * 4);
+    const n = nodes[k], pp = (pcur[k] - 10) / 90;
+    if (Math.abs(pcur[k] - colP[k]) > 0.8) { // weak result → duller petals; refresh only when it changed
+      colP[k] = pcur[k]; const pq = (pcur[k] - 10) / 90; recolored = true;
+      const spread = 0.03 + 0.07 * clamp01((pcur[k] - 70) / 10); // from 80 on: red also drifts to orange / violet
+      for (let j = 0; j < PER_WP; j++) { const f = flowers[k * PER_WP + j]; headOf(k).setColorAt(headIdx(f.i), col.setHSL(noGreen((CLIMATE[k] + f.u * spread + 1) % 1), 0.35 + 0.5 * pq, 0.62 - 0.1 * pq)); }
+    }
+    nodeFlash[k] = Math.max(0, nodeFlash[k] - dt * 1.6); const fl = nodeFlash[k];
+    n.disc.uniforms.uGlow.value += ((k === nextK ? 0.85 + 0.15 * Math.sin(t * 2.2) : 0) + fl * 2 - n.disc.uniforms.uGlow.value) * Math.min(1, dt * 12);
+    n.discMesh.scale.set(1 + 0.22 * fl, 1 + 0.5 * fl, 1 + 0.22 * fl);
+    n.disc.color.lerp(done[k] ? tmpC.setHSL(CLIMATE[k], 0.8, 0.5) : k === nextK ? WHITE : GREY, Math.min(1, dt * 8));
+    const nxt = k === nextK, lk = Math.min(1, dt * 5);
+    lightU.uInt.value[k] += ((done[k] ? 0.55 + 0.6 * pp : nxt ? 0.95 : 0.08) + fl * 1.8 - lightU.uInt.value[k]) * Math.min(1, lk * 2);
+    lightU.uLCol.value[k].lerp(done[k] ? lightC.setHSL(CLIMATE[k], 0.7, 0.6) : nxt ? GOLDW : GREY.clone().multiplyScalar(1.2), lk);
+    // done: star at 100 %, otherwise 5 dots; open waypoints keep the grey star
+    const pe = Math.max(eff(k), 10), full = done[k] && pe >= 100;
+    const cnt = done[k] && !full ? Math.min(4, 1 + Math.floor((pe - 10) / 22.5)) : 0;
+    const ks = Math.min(1, dt * 10), starT = full ? 0.42 : 0.0001;
+    n.starMesh.scale.setScalar(n.starMesh.scale.x + (starT - n.starMesh.scale.x) * ks);
+    n.dots.forEach((d, j) => {
+      const show = done[k] && !full;
+      d.scale.setScalar(Math.max(0.0001, d.scale.x + ((show ? d.userData.sc : 0.0001) - d.scale.x) * ks));
+      d.material.color.lerp(j < cnt ? WHITE : tmpC.copy(n.disc.color).multiplyScalar(0.58), ks);
+    });
+    n.star.color.lerp(WHITE, Math.min(1, dt * 8));
+    n.glyph.color.lerp(done[k] ? WHITE : k === nextK ? STAR_NEXT : STAR_GREY, Math.min(1, dt * 8));
+  }
+
+  for (let i = 0; i < N; i++) {
+    const f = flowers[i];
+    const on = done[f.k] && f.rank < frac(eff(f.k));
+    const p = (pcur[f.k] - 10) / 90; // 0 = weak result, 1 = great result
+    if (on !== f.on) { f.on = on; f.wait = on ? Math.random() * 0.3 : 0; }
+    if (f.wait > 0) f.wait -= dt;
+    else f.g = clamp01(f.g + (on ? 3.2 : -4) * dt);
+    if (f.g > 0) visible++;
+    if (Math.abs(f.z - viewZ) > 24 && (f.g === 0 || f.g === 1)) continue; // far off screen and settled
+
+    // wind target tilt (kein Wind = 0), gusts travel across the field
+    const wave = 0.5 + 0.5 * Math.sin(f.x * 0.35 - t * 2.2 + Math.sin(f.z * 0.3 + t * 0.7) * 1.5);
+    const amp = wind * (0.05 + 0.85 * gate * wave * wave) + wind * 0.03 * Math.sin(t * 7 + f.ph);
+    let tgx = amp, tgz = amp * 0.35 * Math.sin(t * 1.1 + f.ph);
+    const pc = pcur[f.k], calm = 0.3 + 0.7 * smooth(10, 30, pc); // ≤20 %: short and little drooping
+    const droop = Math.pow(1 - p, 1.2) * 0.9 * calm; // weak result → flowers hang their heads
+    tgx += Math.cos(f.dr) * droop; tgz += Math.sin(f.dr) * droop;
+
+    // finger / mouse push
+    if (touch) {
+      const dx = f.x - touch.x, dz = f.z - touch.z, d = Math.hypot(dx, dz), R = 1.7;
+      if (d < R) { const s = Math.pow(1 - d / R, 1.5) * 0.55 / (d + 0.01); tgx += dx * s; tgz += dz * s; }
+    }
+    // spring → natural wobble / overshoot
+    f.vx += ((tgx - f.tx) * 55 - f.vx * 5) * dt; f.tx += f.vx * dt;
+    f.vz += ((tgz - f.tz) * 55 - f.vz * 5) * dt; f.tz += f.vz * dt;
+
+    const sg = f.g, stemS = easeOutBack(clamp01(sg / 0.7)), headS = easeOutBack(clamp01((sg - 0.45) / 0.55));
+    const H = f.h * (0.45 + 0.55 * clamp01((pcur[f.k] - 20) / 60)) * (sg > 0 ? stemS : 0), w = sg > 0 ? 1 : 0; // w=0 hides unborn flowers completely
+    // stem = chain of segments; bend grows towards the tip (curved, not rotated at the root)
+    tip.set(f.x, 0, f.z);
+    for (let s = 0; s < SEG; s++) {
+      const a = Math.pow((s + 1) / SEG, 2) * 1.3;
+      e.set(f.tz * a, 0, -f.tx * a); q.setFromEuler(e);
+      const len = H / SEG;
+      m.compose(tip, q, sc.set(w, len * 1.1, w)); stems.setMatrixAt(i * SEG + s, m);
+      tip.add(up.set(0, len, 0).applyQuaternion(q));
+    }
+    const hs = sg > 0 ? f.hr * (0.45 + 0.55 * clamp01((pcur[f.k] - 10) / 50)) * Math.max(headS, 0) : 0;
+    m.compose(tip, q, sc.set(hs, hs, hs)); headOf(f.k).setMatrixAt(headIdx(i), m);
+
+    // shadow: away from the strongest waypoint light among the neighbours; longer for tall flowers and far from the lamp
+    let bi = -1, bf = 0;
+    for (let jn = Math.max(0, f.k - 1); jn <= Math.min(WAYPOINTS - 1, f.k + 1); jn++) {
+      const ddx = f.x - wpPos[jn].x, ddz = f.z - wpPos[jn].z, lv = lightU.uInt.value[jn] * Math.exp(-(ddx * ddx + ddz * ddz) / 22);
+      if (lv > bf) { bf = lv; bi = jn; }
+    }
+    if (bi < 0 || sg <= 0 || hs <= 0) { shStem.setMatrixAt(i, zeroM); shHead.setMatrixAt(i, zeroM); }
+    else {
+      const dx = f.x - wpPos[bi].x, dz = f.z - wpPos[bi].z, d = Math.hypot(dx, dz) || 0.01, hh = Math.min(tip.y, 1.6), L = d * hh / (LAMP_H - hh);
+      const hx = f.x + dx / d * L + (tip.x - f.x), hz = f.z + dz / d * L + (tip.z - f.z), vx = hx - f.x, vz = hz - f.z;
+      qs.setFromAxisAngle(AXIS_Y, -Math.atan2(vz, vx));
+      m.compose(pos.set(f.x, 0.135, f.z), qs, sc.set(Math.hypot(vx, vz), 1, 1)); shStem.setMatrixAt(i, m);
+      m.compose(pos.set(hx, 0.137, hz), qs.identity(), sc.set(hs * 0.9, 1, hs * 0.9)); shHead.setMatrixAt(i, m);
+      shCol.setScalar(1 - Math.min(0.16, bf * 0.2)); shStem.setColorAt(i, shCol); shHead.setColorAt(i, shCol);
+    }
+  }
+  if (recolored) headMeshes.forEach(h => { h.instanceColor.needsUpdate = true; });
+  stems.instanceMatrix.needsUpdate = true; headMeshes.forEach(h => { h.instanceMatrix.needsUpdate = true; });
+  for (const sm of [shStem, shHead]) sm.instanceMatrix.needsUpdate = sm.instanceColor.needsUpdate = true;
+  $('cnt').textContent = visible + ' Blumen';
+  for (const c of critters) {
+    const want = done[c.k] && eff(c.k) >= c.need ? 1 : 0;
+    c.s += (want - c.s) * Math.min(1, dt * 2.5);
+    c.g.scale.setScalar(c.s < 0.01 ? 0 : c.s);
+    if (c.s < 0.01) continue;
+    const a = t * c.sp + c.ph, cx = wpPos[c.k].x, cz = wpPos[c.k].z;
+    const x = cx + Math.cos(a) * c.rx, z = cz + Math.sin(a * 1.3) * c.rz;
+    const y = c.hy + Math.sin(a * 2.1) * 0.35 + (c.bee ? Math.sin(t * 9 + c.ph) * 0.05 : 0);
+    c.g.rotation.y = Math.atan2(-(z - c.pz), x - c.px) * (c.px || c.pz ? 1 : 0); c.px = x; c.pz = z;
+    c.g.position.set(x, y, z);
+    const fl = Math.sin(t * (c.bee ? 55 : 16) + c.ph) * (c.bee ? 0.5 : 0.9);
+    c.wings[0].rotation.z = fl; c.wings[1].rotation.z = -fl;
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

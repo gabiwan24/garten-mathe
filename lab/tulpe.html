@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tulpe – Wachstums-Test</title>
+<style>
+  :root { --bg:#f5f5f5; --ink:#1f2a44; --card:#fffdf7; --green:#15834f; --line:#d9d9d9; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui, sans-serif;
+         display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:16px; gap:12px; }
+  h1 { font-size:18px; margin:0; }
+  svg { width:min(100%, 360px); height:auto; max-height:68vh; background:var(--bg); border-radius:12px; touch-action:none; }
+  .panel { width:min(100%, 520px); background:var(--card); border-radius:14px; padding:14px 16px; display:grid; gap:12px; }
+  .stage { display:flex; justify-content:space-between; align-items:baseline; }
+  .stage b { font-size:20px; } .stage span { font-variant-numeric:tabular-nums; opacity:.6; }
+  input[type=range] { width:100%; accent-color:var(--green); height:32px; }
+  .ticks { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .ticks button { border:2px solid var(--line); background:#fff; border-radius:8px; padding:6px 0; font:inherit; font-size:13px; cursor:pointer; }
+  .ticks button.on { border-color:var(--green); background:#e6f4ec; font-weight:600; }
+  .row { display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; }
+  .row button, .row select { font:inherit; padding:8px 14px; border-radius:8px; border:2px solid var(--green); background:var(--green); color:#fff; cursor:pointer; }
+  .row select { background:#fff; color:var(--ink); }
+  label { display:flex; gap:6px; align-items:center; }
+</style>
+</head>
+<body>
+<h1>Tulpe · 7 Wachstumsstufen</h1>
+<svg id="svg" viewBox="0 0 400 1030" role="img" aria-label="Tulpe"></svg>
+
+<div class="panel">
+  <div class="stage"><b id="name"></b><span id="val"></span></div>
+  <input id="slider" type="range" min="0" max="6" step="0.001" value="0" aria-label="Wachstum">
+  <div class="ticks" id="ticks"></div>
+  <div class="row">
+    <button id="play">▶ Abspielen</button>
+    <select id="color" aria-label="Farbe"></select>
+    <label><input id="wind" type="checkbox" checked> Wind</label>
+  </div>
+</div>
+
+<script>
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const f2 = n => n.toFixed(2);
+
+const STAGES = ['Zwiebel', 'Knospe 1', 'Knospe 2', 'Knospe 3', 'Geschlossene Blüte', 'Halb offen', 'Offene Blüte'];
+const COLORS = {
+  Rot:     { petal: '#ff6161', shade: '#ee4f55' },
+  Gelb:    { petal: '#ffc83d', shade: '#efb022' },
+  Rosa:    { petal: '#ff8fb1', shade: '#ee7a9e' },
+  Violett: { petal: '#a78bfa', shade: '#8f74e8' },
+};
+const BASE = { stem: '#15834f', grey: '#d9d9d9', pot: '#d9d9d9', soil: '#bc9f77' };
+
+// ---------- species: tulip ----------
+// Stem: x(t) = x0 + A*sin(2*pi*f*t), y(t) = y0 - L*t, t in [0, growth]
+// Each stem has its own clock: local stage = clamp((s - delay) * rate, 0, 6)
+const TULIP = {
+  pot: { x: 117, w: 171, top: 798, bottom: 973 },
+  stems: [
+    { x0: 192, y0: 798, L: 175, A: -55, f: 0.35, delay: 1.5, rate: 0.5, budR: 24 }, // side stem
+    { x0: 205, y0: 798, L: 520, A: 65,  f: 0.95, delay: 0,   rate: 1,   budR: 28 }, // main stem
+  ],
+};
+
+// Teardrop = circle (c, r) + tangent lines to a tip point. Falls back to a circle.
+function teardrop(cx, cy, r, tx, ty) {
+  const d = Math.hypot(tx - cx, ty - cy);
+  if (d <= r * 1.001) return `M${f2(cx - r)} ${f2(cy)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2 * r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2 * r)} 0Z`;
+  const th = Math.atan2(ty - cy, tx - cx), al = Math.acos(r / d);
+  const p = a => `${f2(cx + r * Math.cos(a))} ${f2(cy + r * Math.sin(a))}`;
+  return `M${f2(tx)} ${f2(ty)}L${p(th + al)}A${f2(r)} ${f2(r)} 0 1 1 ${p(th - al)}Z`;
+}
+
+function stemGeometry(st, g, time, wind) {
+  const N = 48, pts = [];
+  for (let i = 0; i <= N; i++) {
+    const t = g * i / N;
+    const x = st.x0 + st.A * Math.sin(2 * Math.PI * st.f * t) + wind * 5 * t * t * Math.sin(time * 1.4 + st.x0 * 0.1);
+    pts.push([x, st.y0 - st.L * t]);
+  }
+  const [x1, y1] = pts[N], [x0, y0] = pts[N - 1];
+  return { d: 'M' + pts.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L'), tip: [x1, y1], angle: Math.atan2(x1 - x0, y0 - y1) };
+}
+
+// Closed bud (A) -> half-open bloom (B): same 5 shapes, repositioned. Frame origin = bottom centre of the stub rect.
+// Each shape is a flat list of x,y pairs; a shared path template lets us lerp number by number.
+const MORPH_A = {
+  body1: [38.5586,36.3564, 45.3778,49.8935,35.5385,65.868,20.3809,65.8682, 5.27648,65.8682,-4.5668,49.9958,2.14746,36.4658, 20.2441,0, 38.5586,36.3564],
+  body2: [38.5586,36.3564, 45.3778,49.8935,35.5385,65.868,20.3809,65.8682, 5.27648,65.8682,-4.5668,49.9958,2.14746,36.4658, 20.2441,0, 38.5586,36.3564],
+  rect:  [18.0626,44.0789, 22.6988,65.8681],
+  tipL:  [20.0999,0.338537, 21.8705,1.2104,18.6804,11.4172,12.8237,24.1532, 9.24577,22.3923, 20.0999,0.338537],
+  tipR:  [20.3807,0.338537, 18.7222,1.16849,22.0662,11.3103,28.0243,23.9986, 31.3758,22.3224, 20.3807,0.338537],
+  ox: 20.381, oy: 65.868,
+};
+const MORPH_B = {
+  body1: [50.6928,33.5648, 62.814,42.6659,61.0915,61.3483,47.5104,68.0792, 33.9769,74.7864,18.1091,64.9357,18.117,49.8314, 18.1387,9.12211, 50.6928,33.5648],
+  body2: [76.989,49.7554, 77.04,64.913,61.099,74.8066,47.539,68.033, 34.0268,61.2831,32.3142,42.685,44.367,33.5817, 76.8522,9.04679, 76.989,49.7554],
+  rect:  [38.0731,48.444, 56.9022,70.2332],
+  tipL:  [18.1769,9.11021, 33.0042,9.11059,45.362,19.677,48.1359,33.6903, 18.1769,33.6903, 18.1769,9.11021],
+  tipR:  [76.9047,9.11021, 62.0773,9.11059,49.7195,19.677,46.9457,33.6903, 76.9047,33.6903, 76.9047,9.11021],
+  ox: 47.488, oy: 70.233,
+};
+const morphNums = (a, b, e) => a.map((v, i) => lerp(v - MORPH_A[i % 2 ? 'oy' : 'ox'], b[i] - MORPH_B[i % 2 ? 'oy' : 'ox'], e));
+function morphBloom(sl, col) {
+  if (sl < 4) return ''; // below 4 the teardrop (same silhouette) is drawn instead; no cross-fades anywhere
+  const e = ss(4, 5, sl), c = ss(5, 6, sl), K = 1.76 * (1 + 0.45 * c), ty = 5.4;
+  const m = k => morphNums(MORPH_A[k], MORPH_B[k], e).map(f2);
+  const body = n => `M${n[0]} ${n[1]}C${n[2]} ${n[3]} ${n[4]} ${n[5]} ${n[6]} ${n[7]}C${n[8]} ${n[9]} ${n[10]} ${n[11]} ${n[12]} ${n[13]}L${n[14]} ${n[15]}L${n[16]} ${n[17]}Z`;
+  const tip = n => `M${n[0]} ${n[1]}C${n[2]} ${n[3]} ${n[4]} ${n[5]} ${n[6]} ${n[7]}L${n[8]} ${n[9]}L${n[10]} ${n[11]}Z`;
+  const r = m('rect');
+  // 5 -> 6: same shapes as stage 5, scaled up; the stamen grows in. Sizes only, never opacity
+  const tf = () => '';
+  let out = `<g transform="translate(0 ${ty}) scale(${K})">`;
+  if (c > 0.01) {
+    const L = 62 * c, y0 = -30;
+    out += `<rect x="-4.6" y="${f2(y0 - L)}" width="9.2" height="${f2(L + 8)}" rx="4.6" fill="${BASE.grey}"/>`
+      + `<circle cx="9" cy="${f2(y0 - L * 0.62)}" r="${f2(6.5 * c)}" fill="${col.petal}"/>`
+      + `<circle cx="-7" cy="${f2(y0 - L * 0.96)}" r="${f2(6.5 * c)}" fill="${col.petal}"/>`;
+  }
+  out += `<g fill="${col.petal}"><path d="${body(m('body1'))}" ${tf(-8, -10, 0, 0)}/><path d="${body(m('body2'))}" ${tf(8, 10, 0, 0)}/>`
+    + `<rect x="${r[0]}" y="${r[1]}" width="${f2(r[2] - r[0])}" height="${f2(r[3] - r[1])}"/>`
+    + `<path d="${tip(m('tipL'))}" ${tf(-8, -24, -14, -37)}/><path d="${tip(m('tipR'))}" ${tf(8, 24, 14, -37)}/></g></g>`;
+  return out;
+}
+
+// Head in local coords: origin = stem tip, "up" = -y. sl = local stage 0..6.
+function headSvg(sl, R, col) {
+  let out = '';
+  const grow = ss(0.6, 1.5, sl);
+  const gy = -0.85 * R * grow;
+  const gr = R * grow * (1 - ss(3, 3.8, sl));
+
+  // body circle: red dot (Knospe 2) -> covers the grey bud (Knospe 3) -> petal body
+  const r = R * (0.4 * ss(1.7, 2.3, sl) + 0.6 * ss(2.3, 3, sl)) + 8 * ss(3, 4, sl) + 16 * ss(4.2, 6, sl);
+  const p2 = ss(2.2, 3, sl);
+  const cx = lerp(0.6 * R * grow, 0, p2);
+  const cy = lerp(gy - 0.78 * R * grow, -0.85 * r, p2);
+  const d = r * (1 + 1.2 * ss(3.2, 4, sl) + 0.35 * ss(4.6, 6, sl));
+  const op = ss(4.3, 6, sl);
+  const lean = 0;
+
+  if (gr > 0.3) out += `<circle cx="0" cy="${f2(gy)}" r="${f2(gr)}" fill="${BASE.grey}"/>`;
+
+  if (r > 0.3 && sl < 4) {
+    const tipAt = (c, ang, dist) => [c[0] + dist * Math.sin(ang), c[1] - dist * Math.cos(ang)];
+    const cA = [cx - 0.55 * r * op, cy], aA = lean - 38 * Math.PI / 180 * op;
+    const rB = r * (1 - 0.1 * op), cB = [cx + 0.55 * r * op, cy], aB = lean + 62 * Math.PI / 180 * op;
+    const tA = tipAt(cA, aA, d), tB = tipAt(cB, aB, d * (1 - 0.08 * op));
+    out += `<g><path d="${teardrop(cA[0], cA[1], r, tA[0], tA[1])}" fill="${col.shade}"/>`;
+    out += `<path d="${teardrop(cB[0], cB[1], rB, tB[0], tB[1])}" fill="${col.petal}"/></g>`;
+  }
+  return out + morphBloom(sl, col);
+}
+
+function render(s, time, col, wind) {
+  const sp = TULIP, pot = sp.pot;
+  let svg = `<rect x="0" y="0" width="400" height="1030" fill="#f5f5f5"/>`;
+
+  for (const st of sp.stems) {
+    const sl = clamp((s - st.delay) * st.rate, 0, 6);
+    const g = ss(0.3, 4.2, sl);
+    if (g < 0.005) continue;
+    const geo = stemGeometry(st, g, time, wind);
+    svg += `<path d="${geo.d}" fill="none" stroke="${BASE.stem}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`;
+    svg += `<g transform="translate(${f2(geo.tip[0])} ${f2(geo.tip[1])}) rotate(${f2(geo.angle * 180 / Math.PI)})">${headSvg(sl, st.budR, col)}</g>`;
+  }
+
+  // bulb sinks into the pot while the shoot emerges
+  const b = 1 - ss(0.2, 1.2, s);
+  if (b > 0.01) {
+    const r = 22 * b, cy = pot.top - r;
+    svg += `<path d="${teardrop(205, cy, r, 205, cy - 1.9 * r)}" fill="${BASE.grey}"/>`;
+  }
+
+  svg += `<rect x="0" y="952" width="400" height="78" fill="${BASE.soil}"/>`;
+  const x1 = pot.x + pot.w;
+  svg += `<path d="M${pot.x} ${pot.top}H${x1}V913Q${x1} ${pot.bottom} ${x1 - 60} ${pot.bottom}H${pot.x + 60}Q${pot.x} ${pot.bottom} ${pot.x} 913Z" fill="${BASE.pot}"/>`;
+  return svg;
+}
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const svgEl = $('svg'), slider = $('slider');
+let playing = false, dir = 1, last = performance.now(), hold = 0;
+
+$('ticks').innerHTML = STAGES.map((n, i) => `<button data-i="${i}" title="${n}">${i}</button>`).join('');
+$('ticks').onclick = e => { const i = e.target.dataset.i; if (i != null) { slider.value = i; playing = false; syncPlay(); } };
+$('color').innerHTML = Object.keys(COLORS).map(n => `<option>${n}</option>`).join('');
+const syncPlay = () => $('play').textContent = playing ? '⏸ Pause' : '▶ Abspielen';
+$('play').onclick = () => { playing = !playing; if (playing && +slider.value >= 6) slider.value = 0; syncPlay(); };
+slider.oninput = () => { playing = false; syncPlay(); };
+
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (playing) {
+    if (hold > 0) hold -= dt;
+    else {
+      let v = +slider.value + dir * dt * 0.7;
+      if (v >= 6 || v <= 0) { v = clamp(v, 0, 6); dir = -dir; hold = 1; }
+      slider.value = v;
+    }
+  }
+  const s = +slider.value, near = Math.round(s);
+  svgEl.innerHTML = render(s, now / 1000, COLORS[$('color').value], $('wind').checked ? 1 : 0);
+  $('name').textContent = STAGES[near];
+  $('val').textContent = `Stufe ${f2(s)} / 6`;
+  [...$('ticks').children].forEach((b, i) => b.classList.toggle('on', i === near));
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
