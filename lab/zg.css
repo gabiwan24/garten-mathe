@@ -13,7 +13,7 @@
   --t-1: 15px; --t-2: 18px; --t-3: 24px; --t-4: clamp(32px, 8.4vw, 44px);
   --w-1: 500; --w-2: 700; --lh: 1.25;
   /* sizes */
-  --size-tap: 48px; --size-key: 56px; --size-slot-w: 48px; --size-slot-h: 60px; --size-dot: 10px; --size-dot-l: 14px; --size-ink-h: min(26vh, 200px); --col: 480px; --bw: 2px;
+  --size-tap: 48px; --size-key: 56px; --size-slot-w: 48px; --size-slot-h: 60px; --size-dot: 10px; --size-dot-l: 14px; --size-ink-h: clamp(160px, 32dvh, 280px); --col: 480px; --bw: 2px;
   /* colour: neutral ink + tints derived from the flower hue of the garden (--h) */
   --ink: #1f2a44; --ink-2: #4f5b78; --white: #ffffff;
   --tint-1: hsl(var(--h) 80% 97%); --tint-2: hsl(var(--h) 75% 93%); --line: hsl(var(--h) 35% 85%);
@@ -41,7 +41,7 @@
 .zg-prog i.on { background: var(--accent); transform: scale(1.4); }
 .zg-body { flex: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: var(--s-5); padding: var(--s-2) var(--s-4) var(--s-5); }
 .zg-body > * { width: min(100%, var(--col)); }
-.zg-center { justify-content: center; }
+.zg-center { justify-content: safe center; } /* safe: stays reachable when the on-screen keyboard shrinks the view */
 .zg-bar { display: flex; gap: var(--s-3); justify-content: center; padding: var(--s-3) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom)); }
 
 /* ---------- task card: priority 1 = the task, 2 = helper picture ---------- */
@@ -138,16 +138,16 @@
 .zg-cell.cur { border-color: var(--accent); background: var(--white); }
 
 /* ---------- tooltip on the garden scene ---------- */
-.zg-tip { position: fixed; z-index: 5; max-width: 240px; background: var(--white); color: var(--ink); border-radius: var(--r-2); padding: var(--s-3) var(--s-4); box-shadow: var(--e-1);
+.zg-tip { position: fixed; z-index: 5; width: max-content; max-width: min(260px, calc(100vw - var(--s-6))); background: var(--white); color: var(--ink); border-radius: var(--r-2); padding: var(--s-3) var(--s-4); box-shadow: var(--e-1);
   font-family: "Nunito", "Segoe UI", system-ui, sans-serif; font-size: var(--t-1); font-weight: var(--w-1); line-height: var(--lh); pointer-events: auto; transform: translate(-50%, -100%);
   --h: 220; }
 .zg-tip b { display: block; font-size: var(--t-2); font-weight: var(--w-2); margin-bottom: var(--s-1); }
 .zg-tip small { display: block; margin-top: var(--s-1); font-size: var(--t-1); color: var(--ink-2); }
-.zg-tip .zg-btn { margin-top: var(--s-3); width: 100%; }
+.zg-tip .zg-btn { margin-top: var(--s-3); width: 100%; white-space: nowrap; padding: 0 var(--s-4); }
 .zg-tip[hidden] { display: none; }
 
 /* ---------- always-visible round buttons (sound, menu) on top of the garden ---------- */
-.zg-fabs { --h: 220; position: fixed; z-index: 20; top: var(--s-4); right: var(--s-4); display: flex; gap: var(--s-2); }
+.zg-fabs { --h: 220; position: fixed; z-index: 20; top: max(var(--s-4), env(safe-area-inset-top)); right: max(var(--s-4), env(safe-area-inset-right)); display: flex; gap: var(--s-2); }
 .zg-fabs .zg-btn { background: var(--white); border-color: var(--white); box-shadow: var(--e-1); }
 .zg-fabs .zg-btn:active { background: var(--tint-2); border-color: var(--tint-2); }
 
@@ -159,7 +159,21 @@
 .zg-list .zg-btn.danger { color: var(--ink); }
 .zg-list .zg-btn small { margin-left: auto; font-size: var(--t-1); font-weight: var(--w-1); color: var(--ink-2); }
 .zg-sub { font-size: var(--t-1); color: var(--ink-2); margin: 0; }
-.zg-field { font: inherit; font-size: var(--t-3); font-weight: var(--w-2); color: var(--ink); text-align: center; height: var(--size-slot-h); width: 100%; border-radius: var(--r-1); background: var(--white); border: var(--bw) solid var(--line); outline: none; }
+.zg-field { -webkit-user-select: text; user-select: text; font: inherit; font-size: var(--t-3); font-weight: var(--w-2); color: var(--ink); text-align: center; height: var(--size-slot-h); width: 100%; border-radius: var(--r-1); background: var(--white); border: var(--bw) solid var(--line); outline: none; }
 .zg-field:focus { border-color: var(--accent); }
 .zg-btn:disabled { opacity: .45; cursor: default; }
 .zg-section { margin: 0; font-size: var(--t-2); font-weight: var(--w-2); text-align: left; }
+
+/* ---------- short phones (about 640-720 px high): tighter sizes so the whole question incl. the keypad fits without scrolling ---------- */
+@media (max-height: 720px) {
+  .zg { --t-4: 28px; --size-key: 48px; --size-slot-h: 48px; --size-ink-h: clamp(120px, 21dvh, 200px); }
+  .zg-top { padding: var(--s-2) var(--s-4); }
+  .zg-body { gap: var(--s-3); padding-bottom: var(--s-3); }
+  .zg-card { padding: var(--s-3) var(--s-4); gap: var(--s-2); }
+  .zg-input { gap: var(--s-3); }
+  .zg-pad { grid-template-columns: repeat(6, 1fr); width: 100%; }
+  .zg-msg { min-height: calc(var(--t-1) * var(--lh) * 2); font-size: var(--t-1); }
+  .zg-bar { padding-top: var(--s-2); }
+  .zg-wall, .zg-wall-row { gap: var(--s-1); }
+  .zg-cell { height: calc(var(--size-key) - var(--s-3)); min-width: calc(var(--size-key) + var(--s-2)); }
+}
