@@ -118,12 +118,13 @@
 .zg-svg { width: 100%; max-width: var(--col); }
 .zg-axis { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
 .zg-mark { stroke: var(--accent); stroke-width: 3; }
-.zg-label { fill: var(--ink); font-size: var(--t-3); font-weight: var(--w-2); }
+.zg-label { fill: var(--ink); font-size: var(--t-4); font-weight: var(--w-2); }
 .zg-start { fill: var(--accent); }
 .zg-hop { fill: none; stroke: var(--accent-ink); stroke-width: 4; stroke-dasharray: 7 6; }
-.zg-ball { fill: var(--accent); stroke: var(--accent-ink); stroke-width: 2; cursor: grab; transition: transform var(--d-2) var(--ease); touch-action: none; }
+.zg-ball { cursor: grab; transition: transform var(--d-2) var(--ease); touch-action: none; }
+.zg-knob { fill: var(--accent); stroke: var(--accent-ink); stroke-width: 2; }
+.zg-hit { fill: transparent; stroke: none; }
 .zg-ball.drag { cursor: grabbing; }
-.zg-guide { stroke: var(--accent-ink); stroke-width: 2; stroke-dasharray: 3 5; }
 .zg-drag { touch-action: none; }
 .zg-ico { vertical-align: middle; }
 .zg-d { stroke-width: 2; }

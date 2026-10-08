@@ -563,7 +563,8 @@ const clampView = z => Math.min(VIEW_START, Math.max(VIEW_END, z));
 let viewZ = clampView(wpPos[Math.max(0, done.indexOf(false))].z - 4), viewTarget = viewZ, lastNext = -2;
 function updateCamera() {
   const el = 0.95, half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); // steep view so the path reads bottom to top
-  const d = Math.max(13.5 / half * 0.95, 9.5 / camera.aspect / half);
+  const wide = camera.aspect < 0.8 ? 6.4 : 9.5; // phones in portrait: zoom in so the waypoints are big enough for a finger
+  const d = Math.max(13.5 / half * 0.95, wide / camera.aspect / half);
   camera.position.set(0, Math.sin(el) * d, viewZ + Math.cos(el) * d);
   camera.lookAt(0, 0, viewZ + 3.4);
 }

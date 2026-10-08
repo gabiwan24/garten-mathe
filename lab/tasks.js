@@ -99,9 +99,11 @@
   };
 
   GEN.line = (L, r) => {
-    if (L === 1) { const n = r.int(11, 19); return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from: 10, to: 20, labels: [10, 20] }, explain: `Hier liegt die ${n}.` }], { max: n }); }
-    if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(8, 20 - a));
-      return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from: 0, to: 20, start: a, jump: b, labels: [0, a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: a + b }); }
+    // the scale varies from task to task (8..17, 10..20, 1..20, ...); only the two ends are printed, never the asked number
+    if (L === 1) { const span = r.int(8, 19), from = r.int(Math.max(0, 12 - span), 20 - span), to = from + span, n = r.int(Math.max(from + 2, 9), to - 2);
+      return task('line', 'Ziehe die Kugel auf die richtige Linie.', [{ prompt: `Wo liegt die ${n}?`, answer: n, input: 'line', visual: { kind: 'line', from, to, labels: [from, to] }, explain: `Hier liegt die ${n}.` }], { max: to }); }
+    if (L === 2) { const a = r.int(6, 12), b = r.int(Math.max(3, 10 - a), Math.min(8, 20 - a)), to = r.int(Math.min(20, a + b + 2), 20), from = Math.min(a - 1, Math.max(0, to - r.int(10, 19)));
+      return task('line', 'Hüpfe auf dem Zahlenstrahl.', [{ prompt: `Start ${a}. Hüpfe ${b} vor. Wo landest du?`, answer: a + b, input: 'line', visual: { kind: 'line', from, to, start: a, jump: b, labels: [from, a] }, explain: `${a} + ${b} = ${a + b}.`, eq: [`${a}+${b}`, '?'] }], { max: to }); }
     if (L === 3) { const n = r.int(11, 19), before = r.chance(0.5);
       return task('line', '', [num(before ? `Welche Zahl kommt direkt vor ${n}?` : `Welche Zahl kommt direkt nach ${n}?`, before ? n - 1 : n + 1, { explain: before ? `Vor ${n} kommt ${n - 1}.` : `Nach ${n} kommt ${n + 1}.`, visual: { kind: 'line', from: n - 3, to: n + 3, labels: [n] } })], { max: n + 1 }); }
     const half = r.int(2, 4), a = r.int(6, 12), b = a + 2 * half; // b >= 10
