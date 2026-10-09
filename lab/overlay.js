@@ -90,7 +90,7 @@
     const say = (text, bad) => { msg.textContent = text; msg.className = 'zg-msg' + (bad ? ' bad' : ''); };
 
     function render() {
-      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false);
+      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false); card.classList.remove('ok', 'zg-shake');
       drawProg(); const t = task(), s = step();
       ctx.textContent = nb(t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
@@ -170,11 +170,12 @@
 
     function submit(val) {
       if (locked) return; const s = step(), ok = Number(val) === s.answer;
-      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); inp.classList.add('zg-flash'); setTimeout(() => inp.classList.remove('zg-flash'), 400); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(next, 1100); return; }
+      // right: green frame, then the card leaves to the left and the next one comes in from the right; wrong: the card shakes
+      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); card.classList.add('ok'); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
-      wrong++; inp.classList.add('zg-shake'); setTimeout(() => inp.classList.remove('zg-shake'), 400); entry = '';
+      wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
       if (wrong === 1) { say('Fast! Schau noch einmal genau hin.', true); showHelp(); if (inp._draw) inp._draw(); }
-      else { shown = true; locked = true; say(`So geht es: ${s.explain}`, true); inp.innerHTML = ''; const ok2 = h('button', 'zg-btn primary', 'Weiter'); inp.appendChild(ok2); inp.hidden = false; ok2.onclick = next; }
+      else { shown = true; locked = true; say(`So geht es: ${s.explain}`, true); inp.innerHTML = ''; const ok2 = h('button', 'zg-btn primary', 'Weiter'); inp.appendChild(ok2); inp.hidden = false; ok2.onclick = advance; }
     }
     const FLASH_MS = 3000;
     function flash() {
@@ -209,6 +210,11 @@
       vis.querySelectorAll('[data-hl]').forEach(e => { e.classList.add(e.tagName === 'path' ? 'zg-hid' : 'zg-hl'); delete e.dataset.hl; });
       vis.querySelectorAll('.zg-help').forEach(e => e.remove());
       helpLabel(false);
+    }
+    const card = $('.zg-card', root), body = $('.zg-body', root);
+    function advance() { // slide the finished question out to the left, the next one in from the right
+      body.classList.add('zg-slide-out');
+      setTimeout(() => { body.classList.remove('zg-slide-out'); next(); body.classList.add('zg-slide-in'); setTimeout(() => body.classList.remove('zg-slide-in'), 420); }, 260);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;

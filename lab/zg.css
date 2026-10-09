@@ -19,7 +19,7 @@
   --tint-1: hsl(var(--h) 80% 97%); --tint-2: hsl(var(--h) 75% 93%); --line: hsl(var(--h) 35% 85%);
   --fill: hsl(var(--h) 85% 72%); --accent: hsl(var(--h) 80% 64%); --fill-down: hsl(var(--h) 85% 82%); --accent-ink: hsl(var(--h) 75% 26%);
   --dot-a: hsl(var(--h) 85% 68%); --dot-a-edge: hsl(var(--h) 60% 40%); --dot-b: hsl(222 50% 22%); --dot-b-edge: hsl(222 55% 12%);
-  --star: hsl(40 90% 38%);
+  --star: hsl(40 90% 38%); --ok: hsl(142 60% 38%);
   /* elevation: only cards float */
   --e-1: 0 1px 2px rgba(31, 42, 68, .06), 0 6px 20px rgba(31, 42, 68, .07);
   /* motion: feedback <= 120 ms, things appearing 240 ms */
@@ -27,7 +27,7 @@
 }
 
 /* ---------- screen ---------- */
-.zg { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; color: var(--ink);
+.zg { position: fixed; inset: 0; z-index: 30; overflow: hidden; display: flex; flex-direction: column; color: var(--ink);
   font-family: "Nunito", "Segoe UI", system-ui, sans-serif; font-weight: var(--w-1); line-height: var(--lh);
   background: linear-gradient(180deg, var(--tint-1), var(--tint-2)); touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   animation: zgIn var(--d-3) var(--ease) both; }
@@ -102,7 +102,14 @@
 .zg-flash { animation: zgFlash var(--d-3) var(--ease); }
 @keyframes zgFlash { 0% { opacity: .55; transform: scale(.985); } 100% { opacity: 1; transform: none; } }
 .zg-shake { animation: zgShake var(--d-3) var(--ease); }
-@keyframes zgShake { 25% { transform: translateX(calc(var(--s-2) * -1)); } 75% { transform: translateX(var(--s-2)); } }
+@keyframes zgShake { 15% { transform: translateX(calc(var(--s-3) * -1)); } 35% { transform: translateX(var(--s-3)); } 55% { transform: translateX(calc(var(--s-2) * -1)); } 75% { transform: translateX(var(--s-2)); } }
+/* right answer: green frame around the card, then the card slides out to the left and the next one comes in from the right */
+.zg-card { transition: box-shadow var(--d-1) var(--ease); }
+.zg-card.ok { box-shadow: 0 0 0 var(--s-1) var(--ok), var(--e-1); }
+.zg-slide-out { animation: zgOut var(--d-2) cubic-bezier(.6, 0, 1, .6) both; }
+@keyframes zgOut { to { transform: translateX(-120%); opacity: 0; } }
+.zg-slide-in { animation: zgInRight var(--d-3) var(--ease) both; }
+@keyframes zgInRight { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* ---------- result, table, finale ---------- */
 .zg-hero { font-size: var(--t-4); color: var(--accent-ink); }

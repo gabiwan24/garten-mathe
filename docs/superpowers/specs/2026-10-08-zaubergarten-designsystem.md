@@ -56,6 +56,7 @@ Text steht immer in `--ink`, `--ink-2` oder `--accent-ink`, nie in einer hellen 
 | Taste | weiß, Rand `--line`, 56 hoch, Ziffer 24/700; Bestätigen-Taste gefüllt |
 | Antwortfeld | ein Feld 104×60 für 1–2 Ziffern (verrät die Länge nicht), Rand `--line`, gefüllt: Rand `--accent` |
 | Karte | weiß, Radius 24, weicher Schatten, Text mittig |
+| Rückmeldung richtig/falsch | Richtig: grüner Rahmen um die Karte (`--ok`), nach 1 s gleitet die Karte nach links hinaus, die nächste kommt von rechts. Falsch: die Karte schüttelt sich, dazu die Hinweiszeile. |
 | Fortschritt | 5 Punkte à 10 px; erledigt `--fill`, aktuell `--accent` und 1,4-fach |
 | Rückmeldung | `--accent-ink`, bei Hinweis `--ink`; Platz reserviert |
 | Tabelle | Linien 1 px `--line`, Zellen 8/4 Abstand, Zahlen rechts mit gleich breiten Ziffern |
