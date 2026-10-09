@@ -354,7 +354,7 @@
 
   // ------------------------------------------------------------ segmentation
   // Pairs a child tends to mix up; used to refuse "close enough" matches.
-  const CONFUSABLE = new Set(['1-7', '0-6', '4-9', '2-7', '3-8', '5-6', '3-5', '6-8', '8-9', '0-8', '6-9', '2-3', '1-4', '0-9']);
+  const CONFUSABLE = new Set(['1-7', '0-6', '4-9', '2-7', '3-8', '5-6', '3-5', '6-8', '8-9', '0-8', '6-9', '2-3', '1-4', '0-9', '5-9', '3-9', '1-9', '7-9']);
   function digitsConfusable(a, b) {
     return a === b || CONFUSABLE.has(a < b ? a + '-' + b : b + '-' + a);
   }

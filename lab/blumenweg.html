@@ -685,6 +685,8 @@ menuBtn.onclick = () => ZGUI.showMenu(nameHue, {
   onName: () => setNameCard(true),
   onScores: () => ZGUI.showScores([0, 1, 2, 3].map(x => ZGTasks.gardenSummary(prog, x)), nameHue),
   onDev: () => { $('panel').hidden = !$('panel').hidden; },
+  inkCount: (() => { try { return JSON.parse(ZGUI.inkSamples()).length; } catch (e) { return 0; } })(),
+  onInk: () => { const txt = ZGUI.inkSamples(); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).catch(() => prompt('Schreibproben (kopieren):', txt)); }, // misread handwriting for tuning the recogniser
   onWipe: wipeProgress
 });
 if (!playerName) setNameCard(false); // the first start asks for the child's name

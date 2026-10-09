@@ -51,3 +51,4 @@
 2026-10-09 – Aufgabenfamilie neu: zwei Rechnungen mit denselben Zahlen (Umkehr/Tausch), am Ende gleiche Zahlen gleich eingefärbt – Zusammenhang war unklar
 2026-10-09 – Aufgabenfamilie: beide Rechnungen auf derselben Karte (nicht zwei getrennte Karten), erste bleibt stehen – Zusammenhang klarer; Besitzer-Korrektur
 2026-10-09 – Aufgabenfamilie: nach der farbigen Auflösung kein Autoweiter, Weiter-Knopf – Kind soll den Zusammenhang in Ruhe ansehen
+2026-10-09 – Erkennung: 5↔9/3↔9/1↔9/7↔9 als verwechselbar, Rückfrage statt falsch gewertet; abgelehnte Vermutungen werden als Schreibproben lokal gespeichert (Menü: kopieren) – 9 wurde als 5 erkannt

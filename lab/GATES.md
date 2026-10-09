@@ -12,7 +12,7 @@ Scope: 32 gemischte Übungen für die vier Gärten, Handschrift-Erkennung, Vollb
 - [x] G2: Handschrift-Erkennung erreicht alle Schwellen im synthetischen Benchmark (mild/medium/stark, Falsch-Annahme klein)
   CHECK: node lab/tests/ink.test.mjs
   EXPECT: INK OK
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=pass  true-accept medium >= 85  (measured 87.9) | INK OK
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=pass  true-accept medium >= 85  (measured 86.7) | INK OK
 
 - [x] G3: Szene ist verdrahtet (Skripte, Marken-Zeichen, Sequenz, Tafel, Feuerwerk, Finale, Glühwürmchen, Hexenhäuschen) und die Oberfläche enthält keine Timer/Leben/Ranglisten
   CHECK: node lab/tests/scene.check.mjs

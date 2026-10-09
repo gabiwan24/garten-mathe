@@ -32,6 +32,12 @@
     const rows = t.steps.slice(0, i + 1).map((st, j) => { const filled = j < i || solved, txt = line(st, filled); return `<span class="zg-eq${j < i && !solved ? ' done' : ''}">${solved ? famColour(txt, t.family) : qmark(txt)}</span>`; });
     return rows.join('');
   };
+  // Misread handwriting (child rejected the guess) is kept locally, labelled with the expected answer, so the recogniser can be tuned on real shapes.
+  // The adult menu can copy the samples (see blumenweg.html).
+  const INK_KEY = 'zg_ink_samples';
+  function saveInkSample(expected, read, strokes) {
+    try { const all = JSON.parse(localStorage.getItem(INK_KEY) || '[]'); all.push({ t: Date.now(), expected, read, strokes: JSON.parse(JSON.stringify(strokes)) }); localStorage.setItem(INK_KEY, JSON.stringify(all.slice(-60))); } catch (e) { /* storage full or private mode */ }
+  }
   const nb = txt => txt.replace(/ (\d+)/g, ' $1').replace(/(\d+) /g, '$1 ');
 
   /* ---------- pictures (all colours come from zg.css classes) ---------- */
@@ -170,7 +176,7 @@
         if (r.ambiguous || !r.bestText) { // not sure: ask, never punish
           say(r.bestText ? `Meinst du ${r.bestText}?` : 'Schreib die Zahl noch einmal etwas größer.');
           if (r.bestText) { row.innerHTML = ''; const y = h('button', 'zg-btn primary', `Ja, ${r.bestText}`), n = h('button', 'zg-btn ghost', 'Nochmal schreiben');
-            y.onclick = () => submit(r.bestText); n.onclick = () => { strokes = []; read.textContent = ''; say(''); paint(); row.innerHTML = ''; row.append(clear, go); }; row.append(y, n); }
+            y.onclick = () => submit(r.bestText); n.onclick = () => { if (r.bestText !== exp) saveInkSample(exp, r.bestText, strokes); strokes = []; read.textContent = ''; say(''); paint(); row.innerHTML = ''; row.append(clear, go); }; row.append(y, n); }
           else { strokes = []; paint(); }
           return; }
         submit(r.bestText);
@@ -317,7 +323,7 @@
     const root = open(hue), item = (a, icon, text, extra, cls) => `<button class="zg-btn ghost${cls ? ' ' + cls : ''}" data-a="${a}">${ico(icon)}<span>${text}</span>${extra ? `<small>${extra}</small>` : ''}</button>`;
     root.innerHTML = `<div class="zg-top"><button class="zg-btn ghost icon" data-a="x" aria-label="Schließen">${ico('close')}</button><div class="zg-prog"></div><span class="zg-spacer"></span></div>
       <div class="zg-body zg-center"><div class="zg-card"><div class="zg-title">Menü für <span data-a="adult">Erwachsene</span></div><p class="zg-sub">Hier ist alles, was nicht zum Spielen gehört.</p>
-      <div class="zg-list">${item('name', 'user', 'Name ändern', esc(opts.name || ''))}${item('scores', 'star', 'Bestwerte ansehen')}</div><div class="zg-list" data-hidden hidden>${item('dev', 'code', 'Entwickler-Regler', opts.devOn ? 'an' : 'aus')}${item('wipe', 'trash', 'Fortschritt löschen', '', 'danger')}</div></div>
+      <div class="zg-list">${item('name', 'user', 'Name ändern', esc(opts.name || ''))}${item('scores', 'star', 'Bestwerte ansehen')}</div><div class="zg-list" data-hidden hidden>${item('dev', 'code', 'Entwickler-Regler', opts.devOn ? 'an' : 'aus')}${item('ink', 'pen', 'Schreibproben kopieren', String(opts.inkCount || 0))}${item('wipe', 'trash', 'Fortschritt löschen', '', 'danger')}</div></div>
       <div class="zg-row"><button class="zg-btn primary" data-a="x">Zurück zum Garten</button></div></div>`;
     let taps = 0;
     root.addEventListener('click', e => {
@@ -327,10 +333,10 @@
       if (a === 'wipe') { // second tap needed: the child must not delete the garden by accident
         if (!b.classList.contains('armed')) { b.classList.add('armed'); b.querySelector('span').textContent = 'Wirklich alles löschen? Nochmal tippen.'; return; }
       }
-      close(root); const fn = { name: opts.onName, scores: opts.onScores, dev: opts.onDev, wipe: opts.onWipe }[a]; fn && fn();
+      close(root); const fn = { name: opts.onName, scores: opts.onScores, dev: opts.onDev, ink: opts.onInk, wipe: opts.onWipe }[a]; fn && fn();
     });
     return root;
   }
 
-  window.ZGUI = { setName: n => { playerName = n || ''; }, askName, showScores, showMenu, runRound, showTable, showFinale, chime, fanfare, tone, audio };
+  window.ZGUI = { inkSamples: () => { try { return localStorage.getItem(INK_KEY) || '[]'; } catch (e) { return '[]'; } }, setName: n => { playerName = n || ''; }, askName, showScores, showMenu, runRound, showTable, showFinale, chime, fanfare, tone, audio };
 })();
