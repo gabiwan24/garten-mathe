@@ -43,3 +43,4 @@
 2026-10-09 – „Wie viele Punkte?“ als Blitzblick: Bild 3 s sichtbar, dann abgedeckt, „Nochmal zeigen“ beliebig oft ohne Abzug – verhindert Einzelzählen, kein sichtbarer Timer
 2026-10-09 – Plusaufgaben: Ergebnis wird zuerst gleichverteilt gewählt, in einer Runde kein Ergebnis doppelt – vorher fast immer 17–19
 2026-10-09 – Hilfe immer als Kreisbild (nie Text), Unbekannte als eingefärbtes ? statt □, Rückwärtsformulierung „x sind y und ?“ entfernt (Plus/Minus über die 10 nur vorwärts), Musik pausiert im Hintergrund – Besitzer-Feedback: unlogisch/unverständlich
+2026-10-09 – Hilfe-Knopf schaltet um (Hilfe / Hilfe aus); das Hilfe-Bild lässt sich wieder ausblenden, der Hilfe-Abzug in der Wertung bleibt – Besitzer-Wunsch

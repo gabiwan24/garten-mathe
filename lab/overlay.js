@@ -87,7 +87,7 @@
     const say = (text, bad) => { msg.textContent = text; msg.className = 'zg-msg' + (bad ? ' bad' : ''); };
 
     function render() {
-      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say('');
+      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false);
       drawProg(); const t = task(), s = step();
       ctx.textContent = nb(t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
@@ -192,11 +192,20 @@
       if (s.visual && s.visual.kind === 'tenframe') return s.visual;
       return typeof s.answer === 'number' && s.answer <= 20 && s.input === 'num' ? { kind: 'tenframe', a: s.answer, b: 0, cross: 0 } : null;
     }
-    function showHelp() {
+    const helpBtn = $('[data-a=help]', root);
+    const helpLabel = on => { helpBtn.innerHTML = `${ico('help')} ${on ? 'Hilfe aus' : 'Hilfe'}`; helpBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); };
+    const helpShown = () => !!vis.querySelector('.zg-help, [data-hl]');  // flash tasks hide their picture by themselves
+    function showHelp() { // `help` stays true for the score even after the picture is hidden again
       help = true; const s = step(), v = s.visual;
-      if (v && v.kind === 'line') { vis.querySelectorAll('.zg-hl').forEach(e => e.classList.remove('zg-hl')); const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); return; } // number line: print every number, show the jump
-      if (v && v.flash) { flash(); return; } // the picture is the task itself: show it again
-      const pic = helpPicture(s); if (pic && !vis.querySelector('.zg-help')) vis.insertAdjacentHTML('beforeend', `<div class="zg-help">${visualHTML(pic, s)}</div>`);
+      if (v && v.kind === 'line') { vis.querySelectorAll('.zg-hl').forEach(e => { e.dataset.hl = '1'; e.classList.remove('zg-hl'); }); const hop = vis.querySelector('.zg-hop'); if (hop) { hop.dataset.hl = '1'; hop.classList.remove('zg-hid'); } } // number line: print every number, show the jump
+      else if (v && v.flash) { flash(); return; } // the picture is the task itself: show it again (it covers itself after a moment)
+      else { const pic = helpPicture(s); if (pic && !vis.querySelector('.zg-help')) vis.insertAdjacentHTML('beforeend', `<div class="zg-help">${visualHTML(pic, s)}</div>`); }
+      helpLabel(true);
+    }
+    function hideHelp() {
+      vis.querySelectorAll('[data-hl]').forEach(e => { e.classList.add(e.tagName === 'path' ? 'zg-hid' : 'zg-hl'); delete e.dataset.hl; });
+      vis.querySelectorAll('.zg-help').forEach(e => e.remove());
+      helpLabel(false);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;
@@ -220,7 +229,7 @@
     root.addEventListener('click', e => {
       const a = e.target.closest('[data-a]'); if (!a) return; const act = a.getAttribute('data-a');
       if (act === 'x') { clearTimeout(flashTimer); close(root); opts.onClose && opts.onClose(); }
-      else if (act === 'help') { if (!locked) showHelp(); }
+      else if (act === 'help') { if (!locked) { if (helpShown()) hideHelp(); else showHelp(); } }
       else if (act === 'peek') flash(); // as often as wanted, never counts against the child
       else if (act === 'alt') { useInk = !useInk; render(); }
     });
