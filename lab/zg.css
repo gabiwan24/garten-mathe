@@ -105,8 +105,17 @@
 @keyframes zgShake { 15% { transform: translateX(calc(var(--s-3) * -1)); } 35% { transform: translateX(var(--s-3)); } 55% { transform: translateX(calc(var(--s-2) * -1)); } 75% { transform: translateX(var(--s-2)); } }
 /* right answer: green frame around the card, then the card slides out to the left and the next one comes in from the right */
 .zg-card { transition: box-shadow var(--d-1) var(--ease); }
-.zg-card.ok { box-shadow: 0 0 0 var(--s-1) var(--ok), var(--e-1); }
-.zg-slide-out { animation: zgOut var(--d-2) cubic-bezier(.6, 0, 1, .6) both; }
+.zg-card { position: relative; }
+.zg-card.ok { box-shadow: 0 0 0 var(--s-1) var(--ok), var(--e-1); animation: zgOk var(--d-3) cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes zgOk {
+  0% { transform: scale(.96); box-shadow: 0 0 0 0 var(--ok), var(--e-1); }
+  45% { transform: scale(1.035); box-shadow: 0 0 0 var(--s-3) var(--ok), var(--e-1); }
+  100% { transform: scale(1); box-shadow: 0 0 0 var(--s-1) var(--ok), var(--e-1); }
+}
+.zg-okmark { position: absolute; top: calc(var(--s-2) * -1); right: calc(var(--s-2) * -1); width: var(--size-tap); height: var(--size-tap); border-radius: 50%; background: var(--ok); color: var(--white);
+  display: flex; align-items: center; justify-content: center; animation: zgPop var(--d-3) cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes zgPop { from { transform: scale(0) rotate(-40deg); } to { transform: scale(1); } }
+.zg-card.zg-slide-out, .zg-slide-out { animation: zgOut var(--d-2) cubic-bezier(.6, 0, 1, .6) both; }
 @keyframes zgOut { to { transform: translateX(-120%); opacity: 0; } }
 .zg-slide-in { animation: zgInRight var(--d-3) var(--ease) both; }
 @keyframes zgInRight { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }

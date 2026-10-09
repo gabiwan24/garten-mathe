@@ -90,7 +90,7 @@
     const say = (text, bad) => { msg.textContent = text; msg.className = 'zg-msg' + (bad ? ' bad' : ''); };
 
     function render() {
-      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false); card.classList.remove('ok', 'zg-shake');
+      locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false); card.classList.remove('ok', 'zg-shake'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove());
       drawProg(); const t = task(), s = step();
       ctx.textContent = nb(t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
@@ -171,7 +171,7 @@
     function submit(val) {
       if (locked) return; const s = step(), ok = Number(val) === s.answer;
       // right: green frame, then the card leaves to the left and the next one comes in from the right; wrong: the card shakes
-      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); card.classList.add('ok'); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, 1000); return; }
+      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
       wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
       // the help is never opened for the child: only the Hilfe button shows it
@@ -215,7 +215,7 @@
     const card = $('.zg-card', root);
     function advance() { // only the question card leaves to the left and the next one comes in from the right; the keypad stays
       card.classList.add('zg-slide-out');
-      setTimeout(() => { card.classList.remove('zg-slide-out', 'ok'); next(); card.classList.add('zg-slide-in'); setTimeout(() => card.classList.remove('zg-slide-in'), 420); }, 260);
+      setTimeout(() => { card.classList.remove('zg-slide-out', 'ok'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove()); next(); card.classList.add('zg-slide-in'); setTimeout(() => card.classList.remove('zg-slide-in'), 420); }, 260);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;

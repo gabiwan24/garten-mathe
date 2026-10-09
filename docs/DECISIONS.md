@@ -47,3 +47,4 @@
 2026-10-09 – Rückmeldung klarer: richtig = grüner Rahmen, Karte gleitet nach links raus und die nächste von rechts rein; falsch = Karte schüttelt sich – Besitzer-Feedback: zu unklar, ob richtig gelöst
 2026-10-09 – Beim Weiterschalten gleitet nur die Aufgabenkarte raus/rein, das Zahlenfeld bleibt stehen – Besitzer-Korrektur
 2026-10-09 – Nach falscher Antwort wird die Hilfe nicht automatisch eingeblendet, nur über den Hilfe-Knopf – Besitzer-Wunsch (Hilfe-Abzug entsteht nur bei eigenem Öffnen)
+2026-10-09 – Grüner Rahmen dynamisch: Karte federt kurz auf, Rahmen wächst mit Überschwingen, grünes Häkchen springt in die Ecke – Besitzer-Wunsch
