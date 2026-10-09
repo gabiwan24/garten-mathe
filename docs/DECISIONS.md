@@ -46,3 +46,4 @@
 2026-10-09 – Hilfe-Knopf schaltet um (Hilfe / Hilfe aus); das Hilfe-Bild lässt sich wieder ausblenden, der Hilfe-Abzug in der Wertung bleibt – Besitzer-Wunsch
 2026-10-09 – Rückmeldung klarer: richtig = grüner Rahmen, Karte gleitet nach links raus und die nächste von rechts rein; falsch = Karte schüttelt sich – Besitzer-Feedback: zu unklar, ob richtig gelöst
 2026-10-09 – Beim Weiterschalten gleitet nur die Aufgabenkarte raus/rein, das Zahlenfeld bleibt stehen – Besitzer-Korrektur
+2026-10-09 – Nach falscher Antwort wird die Hilfe nicht automatisch eingeblendet, nur über den Hilfe-Knopf – Besitzer-Wunsch (Hilfe-Abzug entsteht nur bei eigenem Öffnen)

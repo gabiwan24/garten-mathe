@@ -174,7 +174,8 @@
       if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); card.classList.add('ok'); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
       wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
-      if (wrong === 1) { say('Fast! Schau noch einmal genau hin.', true); showHelp(); if (inp._draw) inp._draw(); }
+      // the help is never opened for the child: only the Hilfe button shows it
+      if (wrong === 1) { say('Fast! Schau noch einmal genau hin.', true); if (inp._draw) inp._draw(); }
       else { shown = true; locked = true; say(`So geht es: ${s.explain}`, true); inp.innerHTML = ''; const ok2 = h('button', 'zg-btn primary', 'Weiter'); inp.appendChild(ok2); inp.hidden = false; ok2.onclick = advance; }
     }
     const FLASH_MS = 3000;
