@@ -231,3 +231,7 @@
 .zg-eq.done { font-size: var(--t-3); color: var(--ink-2); }
 .zg-eq-in { animation: zgEqIn var(--d-3) var(--ease) both; }
 @keyframes zgEqIn { from { opacity: 0; transform: translateY(var(--s-3)); } to { opacity: 1; transform: none; } }
+
+/* quit confirmation: dims the exercise, one card, primary = keep practising */
+.zg-confirm { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: var(--s-4); background: var(--tint-2); animation: zgIn var(--d-2) var(--ease) both; }
+.zg-confirm .zg-card { width: min(100%, var(--col)); }

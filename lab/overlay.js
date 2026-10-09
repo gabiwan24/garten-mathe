@@ -237,6 +237,12 @@
       card.classList.add('zg-slide-out');
       setTimeout(() => { card.classList.remove('zg-slide-out', 'ok'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove()); next(); card.classList.add('zg-slide-in'); setTimeout(() => card.classList.remove('zg-slide-in'), 420); }, 260);
     }
+    // closing an exercise asks first, so a stray tap does not throw the progress away
+    function confirmQuit() {
+      if ($('.zg-confirm', root)) return;
+      root.insertAdjacentHTML('beforeend', `<div class="zg-confirm"><div class="zg-card"><div class="zg-title">Aufhören?</div><p class="zg-text">Dein Weg wartet auf dich.</p>
+        <div class="zg-row"><button class="zg-btn primary" data-a="stay">Weiter üben</button><button class="zg-btn ghost" data-a="quit">Beenden</button></div></div></div>`);
+    }
     function famNext() { // same card: the green frame fades, the second calculation appears below the first
       card.classList.remove('ok'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove()); next();
       const rows = prompt.querySelectorAll('.zg-eq'); if (rows.length) rows[rows.length - 1].classList.add('zg-eq-in');
@@ -262,7 +268,9 @@
 
     root.addEventListener('click', e => {
       const a = e.target.closest('[data-a]'); if (!a) return; const act = a.getAttribute('data-a');
-      if (act === 'x') { clearTimeout(flashTimer); close(root); opts.onClose && opts.onClose(); }
+      if (act === 'x') confirmQuit();
+      else if (act === 'stay') $('.zg-confirm', root).remove();
+      else if (act === 'quit') { clearTimeout(flashTimer); close(root); opts.onClose && opts.onClose(); }
       else if (act === 'help') { if (!locked) { if (helpShown()) hideHelp(); else showHelp(); } }
       else if (act === 'peek') flash(); // as often as wanted, never counts against the child
       else if (act === 'alt') { useInk = !useInk; render(); }
