@@ -211,10 +211,10 @@
       vis.querySelectorAll('.zg-help').forEach(e => e.remove());
       helpLabel(false);
     }
-    const card = $('.zg-card', root), body = $('.zg-body', root);
-    function advance() { // slide the finished question out to the left, the next one in from the right
-      body.classList.add('zg-slide-out');
-      setTimeout(() => { body.classList.remove('zg-slide-out'); next(); body.classList.add('zg-slide-in'); setTimeout(() => body.classList.remove('zg-slide-in'), 420); }, 260);
+    const card = $('.zg-card', root);
+    function advance() { // only the question card leaves to the left and the next one comes in from the right; the keypad stays
+      card.classList.add('zg-slide-out');
+      setTimeout(() => { card.classList.remove('zg-slide-out', 'ok'); next(); card.classList.add('zg-slide-in'); setTimeout(() => card.classList.remove('zg-slide-in'), 420); }, 260);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;
