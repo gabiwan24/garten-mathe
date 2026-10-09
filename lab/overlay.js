@@ -183,7 +183,9 @@
       // right: green frame, then the card leaves to the left and the next one comes in from the right; wrong: the card shakes
       if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); const famLast = !!task().family && si === task().steps.length - 1;
       if (famLast) prompt.innerHTML = famLines(task(), si, true); // solved: equal numbers get equal colours
-      card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(task().family && !famLast ? famNext : advance, famLast ? 2400 : task().family ? 800 : 1000); return; }
+      card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); if (famLast) { // the coloured family stays until the child taps Weiter
+        inp.innerHTML = ''; inp.hidden = false; altBtn.hidden = true; const go = h('button', 'zg-btn primary', 'Weiter'); go.onclick = advance; inp.appendChild(go); return; }
+      setTimeout(task().family ? famNext : advance, task().family ? 800 : 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
       wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
       // the help is never opened for the child: only the Hilfe button shows it

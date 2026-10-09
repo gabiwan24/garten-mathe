@@ -50,3 +50,4 @@
 2026-10-09 – Grüner Rahmen dynamisch: Karte federt kurz auf, Rahmen wächst mit Überschwingen, grünes Häkchen springt in die Ecke – Besitzer-Wunsch
 2026-10-09 – Aufgabenfamilie neu: zwei Rechnungen mit denselben Zahlen (Umkehr/Tausch), am Ende gleiche Zahlen gleich eingefärbt – Zusammenhang war unklar
 2026-10-09 – Aufgabenfamilie: beide Rechnungen auf derselben Karte (nicht zwei getrennte Karten), erste bleibt stehen – Zusammenhang klarer; Besitzer-Korrektur
+2026-10-09 – Aufgabenfamilie: nach der farbigen Auflösung kein Autoweiter, Weiter-Knopf – Kind soll den Zusammenhang in Ruhe ansehen
