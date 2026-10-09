@@ -91,7 +91,7 @@ if (!helpSet.has(T.praise({ wrong: 0, help: true, ink: false, type: 'plus' }, ''
     if (ty === 'pattern' && L === 4) pat4.add(t.steps[0].prompt);
     if (ty === 'tenmath' && L === 4 && t.steps[0].answer + 10 !== t.steps[1].answer) bad('ten maths steps unrelated: ' + t.steps.map(s => s.prompt).join(' / '));
     if (ty === 'line' && L === 3 && t.steps[0].input !== 'line') bad('neighbour task must be dragged');
-    if (ty === 'family' && new Set(t.steps.map(s => s.answer)).size < 2) bad('family needs two different numbers'); }
+    if (ty === 'family') { const f = t.family, ok = new Set([f.a, f.b, f.s]); const nums = t.steps.flatMap(s => (s.prompt + ' ' + (s.ctx || '')).match(/\d+/g) || []).map(Number).concat(t.steps.map(s => s.answer)); if (nums.some(n => !ok.has(n))) bad('family uses a foreign number: ' + t.steps.map(s => s.prompt).join(' / ')); if (f.s !== f.a + f.b) bad('family sum'); if (t.steps.length !== 2) bad('family has two calculations'); } }
   if (pat4.size < 10) bad('pattern level 4 repeats itself: ' + pat4.size + ' different'); }
 // variety: no result dominates a plus round, and within one round results repeat only when the task type has few possible results
 for (const n of T.PLAN.filter(n => n.type === 'plus')) { const c = {}; let tot = 0;

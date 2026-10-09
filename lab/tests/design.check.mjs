@@ -45,7 +45,7 @@ const colour = (name, hue) => { const m = tokens.match(new RegExp('--' + name + 
   if (m.startsWith('#')) return [1, 3, 5].map(i => parseInt(m.slice(i, i + 2), 16) / 255);
   const n = m.replace(/^hsl\(/, '').replace(/\)$/, '').replace('var(--h)', String(hue)).replace(/%/g, '').trim().split(/\s+/).map(Number); return hsl2rgb(...n); };
 const PAIRS = [['ink', 'white', 4.5], ['ink', 'tint-1', 4.5], ['ink', 'tint-2', 4.5], ['ink', 'fill', 4.5], ['ink', 'fill-down', 4.5], ['ink-2', 'white', 4.5], ['ink-2', 'tint-1', 4.5], ['ink-2', 'tint-2', 4.5],
-  ['accent-ink', 'white', 4.5], ['accent-ink', 'tint-1', 4.5], ['accent-ink', 'tint-2', 4.5], ['star', 'white', 3]];
+  ['accent-ink', 'white', 4.5], ['n-1', 'white', 3], ['n-2', 'white', 3], ['n-3', 'white', 3], ['accent-ink', 'tint-1', 4.5], ['accent-ink', 'tint-2', 4.5], ['star', 'white', 3]];
 const worst = [];
 for (const [fg, bg, min] of PAIRS) { let low = 1e9, at = 0; for (const h of HUES) { const r = ratio(colour(fg, h), colour(bg, h)); if (r < low) { low = r; at = h; } } worst.push(`${fg}/${bg} ${low.toFixed(1)}`); if (low < min) bad(`contrast ${fg} on ${bg} = ${low.toFixed(2)} < ${min} (hue ${Math.round(at)})`); }
 

@@ -24,6 +24,8 @@
   // keep a number together with its neighbours so a lone number never wraps onto its own line
   // a lone ? (the unknown) gets the accent colour; a ? at the end of a word (a question) stays plain
   const qmark = txt => txt.replace(/(^|\s)\?(?=\s|$)/g, '$1<span class="zg-q">?</span>');
+  // family task solved: equal numbers get equal colours (a, b, sum) so the connection is visible
+  const famColour = (txt, f) => txt.replace(/\d+/g, n => { const v = Number(n), c = v === f.s ? 'n3' : v === f.a ? 'n1' : v === f.b ? 'n2' : ''; return c ? `<span class="zg-${c}">${n}</span>` : n; });
   const nb = txt => txt.replace(/ (\d+)/g, ' $1').replace(/(\d+) /g, '$1 ');
 
   /* ---------- pictures (all colours come from zg.css classes) ---------- */
@@ -92,7 +94,7 @@
     function render() {
       locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false); card.classList.remove('ok', 'zg-shake'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove());
       drawProg(); const t = task(), s = step();
-      ctx.textContent = nb(t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
+      ctx.textContent = nb(s.ctx != null ? s.ctx : t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
       vis.innerHTML = s.visual && (s.visual.kind !== 'tenframe' || s.visual.show) ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help (they would give the answer away), unless the picture IS the task
       clearTimeout(flashTimer); if (s.visual && s.visual.flash) flash(); // quick look: the picture is covered after a moment, so the child sees groups instead of counting one by one
@@ -171,7 +173,8 @@
     function submit(val) {
       if (locked) return; const s = step(), ok = Number(val) === s.answer;
       // right: green frame, then the card leaves to the left and the next one comes in from the right; wrong: the card shakes
-      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, 1000); return; }
+      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); if (task().family && si === task().steps.length - 1) { ctx.innerHTML = famColour(nb(ctx.textContent), task().family); prompt.innerHTML = famColour(nb(prompt.textContent.replace('?', String(s.answer))), task().family); }
+      card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, task().family && si === task().steps.length - 1 ? 2400 : 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
       wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
       // the help is never opened for the child: only the Hilfe button shows it

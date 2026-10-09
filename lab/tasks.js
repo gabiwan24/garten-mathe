@@ -194,18 +194,22 @@
     return task('count', 'Das Feld hat 20 Plätze.', [num('Wie viele Punkte sind es?', n, { visual: see(n), explain: `10 und ${n - 10} sind ${n}.` }), num('Wie viele fehlen bis 20?', 20 - n, { visual: see(n), eq: [`${n}+?`, '20'], explain: `${n} + ${20 - n} = 20.` })], { max: 20 });
   };
 
-  // new: fact family - one picture, four sums (swap and reverse), shows how plus and minus belong together
+  // new: fact family - two calculations with the SAME three numbers in a different combination (plus <-> minus, or swapped).
+  // At the end the overlay colours equal numbers equally, so the child sees that it is one family (task.family = {a, b, s}).
   GEN.family = (L, r) => {
     let a, b; do { a = r.int(4, 9); b = r.int(Math.max(2, 11 - a), 9); } while (a === b);
-    const s = a + b;
-    if (L <= 2) return task('family', `Eine Familie: ${a} + ${b} = ${s}`, [
-      num(`${b} + ${a} = ?`, s, { eq: [`${b}+${a}`, '?'], explain: `Tauschen: ${b} + ${a} = ${s}.` }),
-      num(`${s} − ${b} = ?`, a, { eq: [`${s}-${b}`, '?'], explain: `Zurück: ${s} − ${b} = ${a}.` }),
-      num(`${s} − ${a} = ?`, b, { eq: [`${s}-${a}`, '?'], explain: `${s} − ${a} = ${b}.` })], { max: s });
-    return task('family', `Eine Familie: ${s} − ${b} = ${a}`, [
-      num(`${s} − ${a} = ?`, b, { eq: [`${s}-${a}`, '?'], explain: `${s} − ${a} = ${b}.` }),
-      num(`${a} + ${b} = ?`, s, { eq: [`${a}+${b}`, '?'], explain: `${a} + ${b} = ${s}.` }),
-      num(`${b} + ${a} = ?`, s, { eq: [`${b}+${a}`, '?'], explain: `${b} + ${a} = ${s}.` })], { max: s });
+    const s = a + b, v = r.int(0, 2), front = L <= 2;
+    // first calculation (given as a question) and the second one that uses the same numbers
+    let first, second;
+    if (front) first = { lhs: `${a} + ${b}`, ans: s, eq: [`${a}+${b}`, '?'] };
+    else { const x = r.chance(0.5) ? a : b; first = { lhs: `${s} − ${x}`, ans: s - x, eq: [`${s}-${x}`, '?'] }; }
+    if (front) second = v === 0 ? { lhs: `${s} − ${b}`, ans: a, eq: [`${s}-${b}`, '?'] } : v === 1 ? { lhs: `${s} − ${a}`, ans: b, eq: [`${s}-${a}`, '?'] } : { lhs: `${b} + ${a}`, ans: s, eq: [`${b}+${a}`, '?'] };
+    else second = { lhs: `${first.ans} + ${s - first.ans}`, ans: s, eq: [`${first.ans}+${s - first.ans}`, '?'] };
+    const step = (c, ctx, ex) => num(`${c.lhs} = ${unk}`, c.ans, { eq: c.eq, ctx, explain: ex });
+    const done1 = `${first.lhs} = ${first.ans}`;
+    return task('family', 'Zwei Rechnungen, dieselben Zahlen.', [
+      step(first, null, `${done1}.`),
+      step(second, `Dazu passt: ${done1}`, `${second.lhs} = ${second.ans}.`)], { max: s, family: { a, b, s } });
   };
 
   const FAMILIES = ['pairs10', 'plus', 'minus', 'gap', 'line', 'wall', 'double', 'compare', 'story', 'pattern', 'tenmath', 'count', 'family'];
