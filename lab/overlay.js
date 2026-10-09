@@ -27,7 +27,7 @@
   const nb = txt => txt.replace(/ (\d+)/g, ' $1').replace(/(\d+) /g, '$1 ');
 
   /* ---------- pictures (all colours come from zg.css classes) ---------- */
-  const cell = (cx, cy, cls, crossed) => `<circle class="zg-d ${cls}${crossed ? ' x' : ''}" cx="${cx}" cy="${cy}" r="${cls === 'o' ? 13 : 12}"/>` + (crossed ? `<path class="zg-xl" d="M${cx - 8} ${cy - 8}L${cx + 8} ${cy + 8}M${cx + 8} ${cy - 8}L${cx - 8} ${cy + 8}"/>` : '');
+  const cell = (cx, cy, cls, crossed) => `<circle class="zg-d ${cls}${crossed ? ' x' : ''}" cx="${cx}" cy="${cy}" r="${cls === 'o' ? 13 : 11}"/>` + (crossed ? `<path class="zg-xl" d="M${cx - 8} ${cy - 8}L${cx + 8} ${cy + 8}M${cx + 8} ${cy - 8}L${cx - 8} ${cy + 8}"/>` : '');
   const frameCells = v => { let g = ''; const tot = (v.a || 0) + (v.b || 0), cr = v.cross || 0;
     for (let i = 0; i < 20; i++) { const frame = Math.floor(i / 10), j = i % 10, cx = 16 + (j % 5) * 32, cy = 16 + Math.floor(j / 5) * 32 + frame * 76;
       g += cell(cx, cy, i < (v.a || 0) ? 'a' : i < tot ? 'b' : 'o', i < tot && i >= tot - cr); }
@@ -38,10 +38,13 @@
       let g = frameCells(v);
       return `<svg class="zg-svg zg-frame" viewBox="0 0 160 148" width="176" height="163">${g}</svg>`;
     }
-    if (v.kind === 'bars') { // compare: one row of dots per side
-      let g = ''; v.rows.forEach((r, ri) => { const y = 14 + ri * 36, tot = (r.a || 0) + (r.b || 0); let x = 14;
-        for (let i = 0; i < tot; i++) { const cls = i < (r.a || 0) ? 'a' : 'b', gap = i === (r.a || 0) && i > 0 ? 8 : 0; x += gap; g += cell(x, y, cls, i >= tot - (r.cross || 0)); x += 26; } });
-      return `<svg class="zg-svg zg-bars" viewBox="0 0 520 ${14 + v.rows.length * 36}">${g}</svg>`;
+    if (v.kind === 'bars') { // compare: one labelled block of dots per side, ten per line (like a ten-frame), so both sides can be compared at a glance
+      let g = '', y = 0;
+      v.rows.forEach(r => { const tot = (r.a || 0) + (r.b || 0), lines = Math.max(1, Math.ceil(tot / 10));
+        g += `<text class="zg-barlab" x="6" y="${y + 20}">${r.label || ''}</text>`;
+        for (let i = 0; i < tot; i++) g += cell(18 + (i % 10) * 30, y + 44 + Math.floor(i / 10) * 30, i < (r.a || 0) ? 'a' : 'b', i >= tot - (r.cross || 0));
+        y += 30 + lines * 30 + 14; });
+      return `<svg class="zg-svg zg-bars" viewBox="0 0 320 ${y - 10}">${g}</svg>`;
     }
     if (v.kind === 'line') {
       const n = v.to - v.from, W = 520, pad = 30, dx = (W - 2 * pad) / n, y = 78, drag = step.input === 'line', H = v.start != null ? 140 : 110; let s = `<svg class="zg-svg${drag ? ' zg-drag' : ''}" viewBox="0 0 ${W} ${H}" data-pad="${pad}" data-dx="${dx}" data-n="${n}" data-from="${v.from}" data-y="${y}" data-start="${drag && v.start != null ? v.start - v.from : 0}">`;

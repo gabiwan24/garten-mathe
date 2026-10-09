@@ -143,10 +143,10 @@
   GEN.compare = (L, r) => {
     const cmp = (x, y) => (x < y ? 0 : x === y ? 1 : 2);
     const mk = (txt, x, y, ex, mx, rows) => task('compare', 'Kleiner, gleich oder größer?', [{ prompt: txt, answer: cmp(x, y), input: 'cmp', choices: ['<', '=', '>'], help: { kind: 'bars', rows }, explain: `${x} ${['<', '=', '>'][cmp(x, y)]} ${y}. ${ex || ''}`.trim() }], { max: mx || Math.max(x, y) });
-    if (L === 1) { const x = r.int(10, 19), y = r.chance(0.2) ? x : r.int(10, 19); return mk(`${x} ○ ${y}`, x, y, '', 0, [{ a: x }, { a: y }]); }
-    if (L === 2) { const a = r.int(5, 9), b = r.int(5, 9), y = r.chance(0.25) ? a + b : r.int(11, 18); return mk(`${a} + ${b} ○ ${y}`, a + b, y, `${a} + ${b} = ${a + b}.`, 0, [{ a, b }, { a: y }]); }
-    if (L === 3) { const a = r.int(5, 9), b = r.int(5, 9), c = r.int(5, 9), d = r.chance(0.3) ? a + b - c : r.int(5, 9); return mk(`${a} + ${b} ○ ${c} + ${d}`, a + b, c + d, `${a + b} und ${c + d}.`, 0, [{ a, b }, { a: c, b: d }]); }
-    const a = r.int(12, 19), b = r.int(2, 9), c = r.int(5, 9), d = r.int(2, 9); return mk(`${a} − ${b} ○ ${c} + ${d}`, a - b, c + d, `${a - b} und ${c + d}.`, a, [{ a, cross: b }, { a: c, b: d }]);
+    if (L === 1) { const x = r.int(10, 19), y = r.chance(0.2) ? x : r.int(10, 19); return mk(`${x} ○ ${y}`, x, y, '', 0, [{ a: x, label: String(x) }, { a: y, label: String(y) }]); }
+    if (L === 2) { const a = r.int(5, 9), b = r.int(5, 9), y = r.chance(0.25) ? a + b : r.int(11, 18); return mk(`${a} + ${b} ○ ${y}`, a + b, y, `${a} + ${b} = ${a + b}.`, 0, [{ a, b, label: `${a} + ${b}` }, { a: y, label: String(y) }]); }
+    if (L === 3) { const a = r.int(5, 9), b = r.int(5, 9), c = r.int(5, 9), d = r.chance(0.3) ? a + b - c : r.int(5, 9); return mk(`${a} + ${b} ○ ${c} + ${d}`, a + b, c + d, `${a + b} und ${c + d}.`, 0, [{ a, b, label: `${a} + ${b}` }, { a: c, b: d, label: `${c} + ${d}` }]); }
+    const a = r.int(12, 19), b = r.int(2, 9), c = r.int(5, 9), d = r.int(2, 9); return mk(`${a} − ${b} ○ ${c} + ${d}`, a - b, c + d, `${a - b} und ${c + d}.`, a, [{ a, cross: b, label: `${a} − ${b}` }, { a: c, b: d, label: `${c} + ${d}` }]);
   };
 
   const HERO = [['Funki', 'er', 'Blüten'], ['Mia', 'sie', 'Tautropfen'], ['Igel Ino', 'er', 'Samen'], ['Eule Ella', 'sie', 'Beeren']];

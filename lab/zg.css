@@ -203,4 +203,5 @@
 .zg-d.x { opacity: .4; }
 .zg-xl { stroke: var(--ink-2); stroke-width: 2.5; stroke-linecap: round; fill: none; }
 .zg-help { display: flex; justify-content: center; width: 100%; }
-.zg-bars { width: 100%; max-width: var(--col); }
+.zg-bars { width: 100%; max-width: calc(var(--size-key) * 6); }
+.zg-barlab { fill: var(--ink-2); font-size: var(--t-3); font-weight: var(--w-2); }
