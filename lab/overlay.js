@@ -26,6 +26,12 @@
   const qmark = txt => txt.replace(/(^|\s)\?(?=\s|$)/g, '$1<span class="zg-q">?</span>');
   // family task solved: equal numbers get equal colours (a, b, sum) so the connection is visible
   const famColour = (txt, f) => txt.replace(/\d+/g, n => { const v = Number(n), c = v === f.s ? 'n3' : v === f.a ? 'n1' : v === f.b ? 'n2' : ''; return c ? `<span class="zg-${c}">${n}</span>` : n; });
+  // family task: the first (solved) calculation stays above the second one on the same card; at the end both are coloured
+  const famLines = (t, i, solved) => {
+    const line = (st, filled) => nb(st.prompt.replace('?', filled ? String(st.answer) : '?'));
+    const rows = t.steps.slice(0, i + 1).map((st, j) => { const filled = j < i || solved, txt = line(st, filled); return `<span class="zg-eq${j < i && !solved ? ' done' : ''}">${solved ? famColour(txt, t.family) : qmark(txt)}</span>`; });
+    return rows.join('');
+  };
   const nb = txt => txt.replace(/ (\d+)/g, ' $1').replace(/(\d+) /g, '$1 ');
 
   /* ---------- pictures (all colours come from zg.css classes) ---------- */
@@ -94,7 +100,9 @@
     function render() {
       locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say(''); helpLabel(false); card.classList.remove('ok', 'zg-shake'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove());
       drawProg(); const t = task(), s = step();
-      ctx.textContent = nb(s.ctx != null ? s.ctx : t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
+      ctx.textContent = nb(s.ctx != null ? s.ctx : t.ctx);
+      if (t.family) prompt.innerHTML = famLines(t, si, false); // both calculations stay on the same card, so the connection is visible
+      else prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
       vis.innerHTML = s.visual && (s.visual.kind !== 'tenframe' || s.visual.show) ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help (they would give the answer away), unless the picture IS the task
       clearTimeout(flashTimer); if (s.visual && s.visual.flash) flash(); // quick look: the picture is covered after a moment, so the child sees groups instead of counting one by one
@@ -173,8 +181,9 @@
     function submit(val) {
       if (locked) return; const s = step(), ok = Number(val) === s.answer;
       // right: green frame, then the card leaves to the left and the next one comes in from the right; wrong: the card shakes
-      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); if (task().family && si === task().steps.length - 1) { ctx.innerHTML = famColour(nb(ctx.textContent), task().family); prompt.innerHTML = famColour(nb(prompt.textContent.replace('?', String(s.answer))), task().family); }
-      card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(advance, task().family && si === task().steps.length - 1 ? 2400 : 1000); return; }
+      if (ok) { locked = true; lastPraise = T.praise({ wrong, help, ink: useInk && s.input === 'num', type: task().type }, lastPraise); say(lastPraise); const famLast = !!task().family && si === task().steps.length - 1;
+      if (famLast) prompt.innerHTML = famLines(task(), si, true); // solved: equal numbers get equal colours
+      card.classList.add('ok'); card.insertAdjacentHTML('beforeend', `<span class="zg-okmark">${ico('check')}</span>`); chime(si + ti); if (navigator.vibrate) navigator.vibrate(15); setTimeout(task().family && !famLast ? famNext : advance, famLast ? 2400 : task().family ? 800 : 1000); return; }
       if (ballReset) setTimeout(ballReset, 700); // the ball rolls back to the start after a wrong drop
       wrong++; card.classList.remove('zg-shake'); void card.offsetWidth; card.classList.add('zg-shake'); setTimeout(() => card.classList.remove('zg-shake'), 500); entry = '';
       // the help is never opened for the child: only the Hilfe button shows it
@@ -219,6 +228,10 @@
     function advance() { // only the question card leaves to the left and the next one comes in from the right; the keypad stays
       card.classList.add('zg-slide-out');
       setTimeout(() => { card.classList.remove('zg-slide-out', 'ok'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove()); next(); card.classList.add('zg-slide-in'); setTimeout(() => card.classList.remove('zg-slide-in'), 420); }, 260);
+    }
+    function famNext() { // same card: the green frame fades, the second calculation appears below the first
+      card.classList.remove('ok'); card.querySelectorAll('.zg-okmark').forEach(e => e.remove()); next();
+      const rows = prompt.querySelectorAll('.zg-eq'); if (rows.length) rows[rows.length - 1].classList.add('zg-eq-in');
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;

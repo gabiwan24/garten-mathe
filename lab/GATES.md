@@ -47,7 +47,7 @@ Scope: 32 gemischte Übungen für die vier Gärten, Handschrift-Erkennung, Vollb
 - [x] G11: Designsystem eingehalten: Tokens statt rohe Werte, 4-px-Raster, keine Emojis/Inline-Stile, ein Hauptknopf je Ansicht, Kontrast >= 4,5:1 für alle 8 Gartenfarben
   CHECK: node lab/tests/design.check.mjs
   EXPECT: DESIGN OK
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=declarations checked=473 icons=28 used=22; worst contrast: ink/white 14.3 | ink/tint-1 12.9 | ink/tint-2 11.3 | ink/fill 4.7 | ink/fill-down 7.3 | ink-2/white 6.8 | ink-2/tint-1 6.1 | ink-2/tint-2 5.3 | accent-ink/white 6.3 | n-1/white 6.3 
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\Gabriel Weiss\Documents\Claude_Vibecoding\lernapp_zahlen; path=5aafc0a57e72/43 entries; output=declarations checked=481 icons=28 used=22; worst contrast: ink/white 14.3 | ink/tint-1 12.9 | ink/tint-2 11.3 | ink/fill 4.7 | ink/fill-down 7.3 | ink-2/white 6.8 | ink-2/tint-1 6.1 | ink-2/tint-2 5.3 | accent-ink/white 6.3 | n-1/white 6.3 
 
 - [x] G12: Zahlenstrahl wird durch Ziehen einer Kugel beantwortet (richtig: rastet auf der Linie ein und wird akzeptiert; falsch: Hinweis, Kugel rollt zurück); Übungsbildschirm im neuen Design mit Linien-Symbolen
   EVIDENCE: 2026-10-08, Browser-Vorschau (375x812): simulierte Pointer-Ereignisse; Ziehen auf die gefragte Zahl -> Kugel translate(95px,58px) auf der Linie, Meldung 'Super geübt!'; Ziehen auf eine falsche Zahl -> Meldung 'Fast! Schau noch einmal genau hin.', Kugel danach zurück (transform leer). Screens Tastatur, Schreiben, Zahlenstrahl angesehen. Echtes Ziehen mit dem Finger nicht getestet.

@@ -49,3 +49,4 @@
 2026-10-09 – Nach falscher Antwort wird die Hilfe nicht automatisch eingeblendet, nur über den Hilfe-Knopf – Besitzer-Wunsch (Hilfe-Abzug entsteht nur bei eigenem Öffnen)
 2026-10-09 – Grüner Rahmen dynamisch: Karte federt kurz auf, Rahmen wächst mit Überschwingen, grünes Häkchen springt in die Ecke – Besitzer-Wunsch
 2026-10-09 – Aufgabenfamilie neu: zwei Rechnungen mit denselben Zahlen (Umkehr/Tausch), am Ende gleiche Zahlen gleich eingefärbt – Zusammenhang war unklar
+2026-10-09 – Aufgabenfamilie: beide Rechnungen auf derselben Karte (nicht zwei getrennte Karten), erste bleibt stehen – Zusammenhang klarer; Besitzer-Korrektur

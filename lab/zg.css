@@ -225,3 +225,9 @@
 .zg-barlab { fill: var(--ink-2); font-size: var(--t-3); font-weight: var(--w-2); }
 
 .zg-n1 { color: var(--n-1); } .zg-n2 { color: var(--n-2); } .zg-n3 { color: var(--n-3); }
+
+/* family task: two calculations on one card */
+.zg-eq { display: block; }
+.zg-eq.done { font-size: var(--t-3); color: var(--ink-2); }
+.zg-eq-in { animation: zgEqIn var(--d-3) var(--ease) both; }
+@keyframes zgEqIn { from { opacity: 0; transform: translateY(var(--s-3)); } to { opacity: 1; transform: none; } }

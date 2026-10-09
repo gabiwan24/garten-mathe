@@ -209,7 +209,7 @@
     const done1 = `${first.lhs} = ${first.ans}`;
     return task('family', 'Zwei Rechnungen, dieselben Zahlen.', [
       step(first, null, `${done1}.`),
-      step(second, `Dazu passt: ${done1}`, `${second.lhs} = ${second.ans}.`)], { max: s, family: { a, b, s } });
+      step(second, null, `${second.lhs} = ${second.ans}.`)], { max: s, family: { a, b, s } });
   };
 
   const FAMILIES = ['pairs10', 'plus', 'minus', 'gap', 'line', 'wall', 'double', 'compare', 'story', 'pattern', 'tenmath', 'count', 'family'];
