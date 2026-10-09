@@ -22,25 +22,33 @@
   const fanfare = () => [0, 2, 4, 7].forEach((n, i) => tone(PENTA[n], i * 0.09, 0.9, 0.05));
 
   // keep a number together with its neighbours so a lone number never wraps onto its own line
+  // a lone ? (the unknown) gets the accent colour; a ? at the end of a word (a question) stays plain
+  const qmark = txt => txt.replace(/(^|\s)\?(?=\s|$)/g, '$1<span class="zg-q">?</span>');
   const nb = txt => txt.replace(/ (\d+)/g, ' $1').replace(/(\d+) /g, '$1 ');
 
   /* ---------- pictures (all colours come from zg.css classes) ---------- */
+  const cell = (cx, cy, cls, crossed) => `<circle class="zg-d ${cls}${crossed ? ' x' : ''}" cx="${cx}" cy="${cy}" r="${cls === 'o' ? 13 : 12}"/>` + (crossed ? `<path class="zg-xl" d="M${cx - 8} ${cy - 8}L${cx + 8} ${cy + 8}M${cx + 8} ${cy - 8}L${cx - 8} ${cy + 8}"/>` : '');
+  const frameCells = v => { let g = ''; const tot = (v.a || 0) + (v.b || 0), cr = v.cross || 0;
+    for (let i = 0; i < 20; i++) { const frame = Math.floor(i / 10), j = i % 10, cx = 16 + (j % 5) * 32, cy = 16 + Math.floor(j / 5) * 32 + frame * 76;
+      g += cell(cx, cy, i < (v.a || 0) ? 'a' : i < tot ? 'b' : 'o', i < tot && i >= tot - cr); }
+    return g; };
   function visualHTML(v, step) {
     if (!v) return '';
-    if (v.kind === 'tenframe') { // two ten-frames (20 cells): first a dots (light), then b dots (dark), the rest empty
-      let g = '';
-      for (let i = 0; i < 20; i++) {
-        const frame = Math.floor(i / 10), j = i % 10, cx = 16 + (j % 5) * 32, cy = 16 + Math.floor(j / 5) * 32 + frame * 76, cls = i < v.a ? 'a' : i < v.a + v.b ? 'b' : 'o';
-        g += `<circle class="zg-d ${cls}" cx="${cx}" cy="${cy}" r="13"/>`;
-      }
+    if (v.kind === 'tenframe') { // two ten-frames (20 cells): first a dots (light), then b dots (dark), the last `cross` filled dots are struck out, the rest empty
+      let g = frameCells(v);
       return `<svg class="zg-svg zg-frame" viewBox="0 0 160 148" width="176" height="163">${g}</svg>`;
+    }
+    if (v.kind === 'bars') { // compare: one row of dots per side
+      let g = ''; v.rows.forEach((r, ri) => { const y = 14 + ri * 36, tot = (r.a || 0) + (r.b || 0); let x = 14;
+        for (let i = 0; i < tot; i++) { const cls = i < (r.a || 0) ? 'a' : 'b', gap = i === (r.a || 0) && i > 0 ? 8 : 0; x += gap; g += cell(x, y, cls, i >= tot - (r.cross || 0)); x += 26; } });
+      return `<svg class="zg-svg zg-bars" viewBox="0 0 520 ${14 + v.rows.length * 36}">${g}</svg>`;
     }
     if (v.kind === 'line') {
       const n = v.to - v.from, W = 520, pad = 30, dx = (W - 2 * pad) / n, y = 78, drag = step.input === 'line', H = v.start != null ? 140 : 110; let s = `<svg class="zg-svg${drag ? ' zg-drag' : ''}" viewBox="0 0 ${W} ${H}" data-pad="${pad}" data-dx="${dx}" data-n="${n}" data-from="${v.from}" data-y="${y}" data-start="${drag && v.start != null ? v.start - v.from : 0}">`;
       s += `<line class="zg-axis" x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}"/>`;
       for (let i = 0; i <= n; i++) { const x = pad + i * dx, val = v.from + i;
         s += `<line class="zg-mark" x1="${x}" y1="${y - 10}" x2="${x}" y2="${y + 10}"/>`;
-        if (!v.labels || v.labels.indexOf(val) >= 0) s += `<text class="zg-label" x="${x}" y="${y - 24}" text-anchor="middle">${val}</text>`; // numbers sit ABOVE the line so a finger never covers them; few numbers only, the asked one is never printed
+        s += `<text class="zg-label${!v.labels || v.labels.indexOf(val) >= 0 ? '' : ' zg-hl'}" x="${x}" y="${y - 24}" text-anchor="middle">${val}</text>`; // numbers sit ABOVE the line so a finger never covers them; few numbers only, the asked one is never printed
       }
       if (v.start != null) { const x0 = pad + (v.start - v.from) * dx, x1 = pad + (v.start + v.jump - v.from) * dx;
         s += `${drag ? '' : `<circle class="zg-start" cx="${x0}" cy="${y}" r="9"/>`}<path class="zg-hop${drag ? ' zg-hid' : ''}" d="M${x0} ${y + 14} Q${(x0 + x1) / 2} ${y + 52} ${x1} ${y + 14}"/>`; }
@@ -57,7 +65,7 @@
     }
     return '';
   }
-  const TIP = { pairs10: 'Wie viele fehlen bis zur vollen Zehn?', plus: 'Mach erst die 10 voll. Dann den Rest dazu.', minus: 'Geh erst bis zur 10 zurück. Dann den Rest.', gap: 'Probiere eine Zahl aus und rechne nach.', line: 'Hüpfe Schritt für Schritt.', wall: 'Zwei Steine nebeneinander ergeben den Stein darüber.', double: 'Doppelt heißt: zweimal dieselbe Zahl.', compare: 'Rechne zuerst beide Seiten aus.', story: 'Male dir die Geschichte im Kopf.', pattern: 'Schau, wie viel jedes Mal dazukommt.', tenmath: 'Die 10 ist dein Helfer.', count: 'Eine volle Reihe sind 5. Ein volles Feld sind 10.', family: 'Die drei Zahlen bleiben gleich. Nur die Reihenfolge ändert sich.' };
+  const TIP_UNUSED = { pairs10: 'Wie viele fehlen bis zur vollen Zehn?', plus: 'Mach erst die 10 voll. Dann den Rest dazu.', minus: 'Geh erst bis zur 10 zurück. Dann den Rest.', gap: 'Probiere eine Zahl aus und rechne nach.', line: 'Hüpfe Schritt für Schritt.', wall: 'Zwei Steine nebeneinander ergeben den Stein darüber.', double: 'Doppelt heißt: zweimal dieselbe Zahl.', compare: 'Rechne zuerst beide Seiten aus.', story: 'Male dir die Geschichte im Kopf.', pattern: 'Schau, wie viel jedes Mal dazukommt.', tenmath: 'Die 10 ist dein Helfer.', count: 'Eine volle Reihe sind 5. Ein volles Feld sind 10.', family: 'Die drei Zahlen bleiben gleich. Nur die Reihenfolge ändert sich.' };
 
   /* ---------- the overlay itself ---------- */
   function open(hue) { const el = h('div', 'zg'); el.style.setProperty('--h', hue); document.body.appendChild(el); return el; }
@@ -81,7 +89,7 @@
     function render() {
       locked = false; entry = ''; strokes = []; help = help && si > 0; wrong = 0; shown = false; say('');
       drawProg(); const t = task(), s = step();
-      ctx.textContent = nb(t.ctx); prompt.textContent = nb(s.prompt.replace(/ ○ /, '  ?  '));
+      ctx.textContent = nb(t.ctx); prompt.innerHTML = qmark(nb(s.prompt.replace(/ ○ /, ' ? ')));
       $('.zg-card', root).classList.toggle('zg-story', /\d/.test(t.ctx) && !/\d/.test(s.prompt)); // story with numbers: story and question share one size
       vis.innerHTML = s.visual && (s.visual.kind !== 'tenframe' || s.visual.show) ? visualHTML(s.visual, s) : ''; // dot pictures only appear as help (they would give the answer away), unless the picture IS the task
       clearTimeout(flashTimer); if (s.visual && s.visual.flash) flash(); // quick look: the picture is covered after a moment, so the child sees groups instead of counting one by one
@@ -171,11 +179,24 @@
       if (!vis.querySelector('.zg-cover')) vis.insertAdjacentHTML('beforeend', `<button class="zg-cover" type="button" data-a="peek">${ico('eye')}<span>Nochmal zeigen</span></button>`);
       clearTimeout(flashTimer); flashTimer = setTimeout(() => vis.classList.add('zg-covered'), FLASH_MS);
     }
+    // circle picture for a step: given by the task, or derived from its equation (first number light, second dark, taken-away dots struck out)
+    function helpPicture(s) {
+      if (s.help) return s.help;
+      if (s.eq && typeof s.answer === 'number') {
+        const [lhs, rhs] = s.eq;
+        if (/\*/.test(lhs)) return { kind: 'tenframe', a: s.answer, b: s.answer, cross: 0 }; // halving: two equal groups
+        const terms = (rhs === '?' ? lhs : lhs.replace('?', String(s.answer))).match(/[+-]?\d+/g);
+        if (terms) { let pos = [], neg = 0; terms.forEach((x, i) => { const n = Math.abs(Number(x)); if (i === 0 || x[0] !== '-') pos.push(n); else neg += n; });
+          const a = pos[0], b = pos.slice(1).reduce((p, q) => p + q, 0); if (a + b <= 20 && neg <= a + b) return { kind: 'tenframe', a, b, cross: neg }; }
+      }
+      if (s.visual && s.visual.kind === 'tenframe') return s.visual;
+      return typeof s.answer === 'number' && s.answer <= 20 && s.input === 'num' ? { kind: 'tenframe', a: s.answer, b: 0, cross: 0 } : null;
+    }
     function showHelp() {
-      help = true; const s = step();
-      const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); // the jump arc is a help, not part of the question
-      if (!vis.innerHTML.trim() && s.visual) vis.innerHTML = visualHTML(s.visual, s);
-      else if (!vis.querySelector('.zg-tip-line')) vis.insertAdjacentHTML('beforeend', `<div class="zg-tip-line">${ico('help')} ${TIP[task().type] || 'Denk in kleinen Schritten.'}</div>`);
+      help = true; const s = step(), v = s.visual;
+      if (v && v.kind === 'line') { vis.querySelectorAll('.zg-hl').forEach(e => e.classList.remove('zg-hl')); const hop = vis.querySelector('.zg-hop'); if (hop) hop.classList.remove('zg-hid'); return; } // number line: print every number, show the jump
+      if (v && v.flash) { flash(); return; } // the picture is the task itself: show it again
+      const pic = helpPicture(s); if (pic && !vis.querySelector('.zg-help')) vis.insertAdjacentHTML('beforeend', `<div class="zg-help">${visualHTML(pic, s)}</div>`);
     }
     function next() {
       stepResults.push({ wrong, help, shown }); wrong = 0;

@@ -688,6 +688,13 @@ menuBtn.onclick = () => ZGUI.showMenu(nameHue, {
   onWipe: wipeProgress
 });
 if (!playerName) setNameCard(false); // the first start asks for the child's name
+// music (and chimes) stop when the app is hidden or the screen is locked, and continue when it comes back
+document.addEventListener('visibilitychange', () => {
+  const a = window.ZGUI && ZGUI.audio();
+  if (document.hidden) { bg.pause(); if (a && a.suspend) a.suspend(); }
+  else { if (bgStarted) bg.play().catch(() => {}); if (a && a.resume) a.resume(); }
+});
+addEventListener('pagehide', () => bg.pause());
 function bgUpdate() {
   if (!bgStarted || bg.paused) return;
   const d = bg.duration || 0; let v = Math.min(1, bg.currentTime / BG_FADE);

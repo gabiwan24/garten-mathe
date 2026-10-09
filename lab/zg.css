@@ -188,8 +188,19 @@
   .zg-pad { grid-template-columns: repeat(6, 1fr); width: 100%; }
   .zg-key.del { order: 1; } .zg-key.ok { order: 2; }
   .zg-frame { height: calc(var(--size-key) * 2.5); }
+  .zg-help .zg-frame { height: calc(var(--size-key) * 1.75); }
+  .zg-card:has(.zg-help) { gap: var(--s-1); }
   .zg-msg { min-height: calc(var(--t-1) * var(--lh) * 2); font-size: var(--t-1); }
   .zg-bar { padding-top: var(--s-2); }
   .zg-wall, .zg-wall-row { gap: var(--s-1); }
   .zg-cell { height: calc(var(--size-key) - var(--s-3)); min-width: calc(var(--size-key) + var(--s-2)); }
 }
+
+/* ---------- coloured question mark, struck-out dots, help picture ---------- */
+.zg-q { color: var(--accent-ink); }
+.zg-cell.q, .zg-cell.cur { color: var(--accent-ink); }
+.zg-label.zg-hl { visibility: hidden; }
+.zg-d.x { opacity: .4; }
+.zg-xl { stroke: var(--ink-2); stroke-width: 2.5; stroke-linecap: round; fill: none; }
+.zg-help { display: flex; justify-content: center; width: 100%; }
+.zg-bars { width: 100%; max-width: var(--col); }

@@ -19,7 +19,7 @@
   }
 
   /* ---------- text helpers ---------- */
-  const unk = '□';
+  const unk = '?'; // the unknown is a coloured question mark (see overlay.js, .zg-q)
 
   /* ---------- step / task constructors ---------- */
   // eq = [lhs, rhs] with '?' for the unknown; used for the independent self-check in tests
@@ -28,7 +28,7 @@
     const t = Object.assign({ type, ctx: ctx || '', steps }, extra);
     return t;
   };
-  const dots = (a, b) => ({ kind: 'tenframe', a, b: b || 0 });
+  const dots = (a, b, cross) => ({ kind: 'tenframe', a, b: b || 0, cross: cross || 0 }); // cross: the last n filled dots are struck out (taking away)
 
   /* ---------- generators: (level 1..4, rng) -> task ---------- */
   const GEN = {};
@@ -49,12 +49,11 @@
     if (L === 1) { // no bridge, sum 11..19
       const s = r.int(13, 19), b = r.int(2, s - 11), a = s - b; // pick the result first so every sum is equally likely
       return task('plus', '', [num(`${a} + ${b} = ?`, a + b, { eq: [`${a}+${b}`, '?'], visual: dots(a, b), explain: `${a} + ${b} = ${a + b}.` })], { max: a + b }); }
-    if (L === 2) { // guided bridge over ten, three steps
+    if (L === 2) { // guided bridge over ten: first up to the ten, then the rest
       const a = r.int(7, 9), b = r.int(11 - a, 9), to = 10 - a, rest = b - to;
-      return task('plus', `${a} + ${b}: über die 10!`, [
-        num(`${a} + ${unk} = 10`, to, { eq: [`${a}+?`, '10'], visual: dots(a), explain: `${a} + ${to} = 10.` }),
-        num(`${b} sind ${to} und ${unk}`, rest, { eq: [`${to}+?`, String(b)], explain: `${b} = ${to} + ${rest}.` }),
-        num(`10 + ${rest} = ?`, a + b, { eq: [`10+${rest}`, '?'], visual: dots(10, rest), explain: `10 + ${rest} = ${a + b}.` })], { max: a + b }); }
+      return task('plus', `${a} + ${b}: erst ${to} dazu, dann ${rest} dazu.`, [
+        num(`${a} + ${to} = ?`, 10, { eq: [`${a}+${to}`, '?'], explain: `${a} + ${to} = 10.` }),
+        num(`10 + ${rest} = ?`, a + b, { eq: [`10+${rest}`, '?'], explain: `10 + ${rest} = ${a + b}.` })], { max: a + b }); }
     if (L === 3) { let a, b;
       if (r.chance(0.7)) { const s = r.int(11, 18); a = r.int(Math.max(2, s - 9), Math.min(9, s - 2)); b = s - a; } // over the ten, every result 11..18 equally likely
       else { const s = r.int(14, 20); b = r.int(2, Math.min(8, s - 12)); a = s - b; }
@@ -71,10 +70,9 @@
   GEN.minus = (L, r) => {
     if (L === 1) { const a = r.int(12, 19), b = r.int(2, Math.max(2, a % 10 || 2)); const bb = Math.min(b, a % 10 || 1) || 1;
       return task('minus', '', [num(`${a} − ${bb} = ?`, a - bb, { eq: [`${a}-${bb}`, '?'], explain: `${a} − ${bb} = ${a - bb}.` })], { max: a }); }
-    if (L === 2) { const a = r.int(12, 16), b = r.int((a % 10) + 1, 9), to = a - 10, rest = b - to;
-      return task('minus', `${a} − ${b}: über die 10 zurück!`, [
-        num(`${a} − ${unk} = 10`, to, { eq: [`${a}-?`, '10'], explain: `${a} − ${to} = 10.` }),
-        num(`${b} sind ${to} und ${unk}`, rest, { eq: [`${to}+?`, String(b)], explain: `${b} = ${to} + ${rest}.` }),
+    if (L === 2) { const a = r.int(12, 16), b = r.int((a % 10) + 1, 9), to = a - 10, rest = b - to; // first take away down to the ten, then the rest
+      return task('minus', `${a} − ${b}: erst ${to} weg, dann ${rest} weg.`, [
+        num(`${a} − ${to} = ?`, 10, { eq: [`${a}-${to}`, '?'], explain: `${a} − ${to} = 10.` }),
         num(`10 − ${rest} = ?`, a - b, { eq: [`10-${rest}`, '?'], explain: `10 − ${rest} = ${a - b}.` })], { max: a }); }
     if (L === 3) { const a = r.int(11, 18), b = r.int((a % 10) + 1, 9);
       return task('minus', '', [num(`${a} − ${b} = ?`, a - b, { eq: [`${a}-${b}`, '?'], explain: `Erst bis 10, dann den Rest: ${a} − ${b} = ${a - b}.` })], { max: a }); }
@@ -144,11 +142,11 @@
 
   GEN.compare = (L, r) => {
     const cmp = (x, y) => (x < y ? 0 : x === y ? 1 : 2);
-    const mk = (txt, x, y, ex, mx) => task('compare', 'Kleiner, gleich oder größer?', [{ prompt: txt, answer: cmp(x, y), input: 'cmp', choices: ['<', '=', '>'], explain: `${x} ${['<', '=', '>'][cmp(x, y)]} ${y}. ${ex || ''}`.trim() }], { max: mx || Math.max(x, y) });
-    if (L === 1) { const x = r.int(10, 19), y = r.chance(0.2) ? x : r.int(10, 19); return mk(`${x} ○ ${y}`, x, y); }
-    if (L === 2) { const a = r.int(5, 9), b = r.int(5, 9), y = r.chance(0.25) ? a + b : r.int(11, 18); return mk(`${a} + ${b} ○ ${y}`, a + b, y, `${a} + ${b} = ${a + b}.`); }
-    if (L === 3) { const a = r.int(5, 9), b = r.int(5, 9), c = r.int(5, 9), d = r.chance(0.3) ? a + b - c : r.int(5, 9); return mk(`${a} + ${b} ○ ${c} + ${d}`, a + b, c + d, `${a + b} und ${c + d}.`); }
-    const a = r.int(12, 19), b = r.int(2, 9), c = r.int(5, 9), d = r.int(2, 9); return mk(`${a} − ${b} ○ ${c} + ${d}`, a - b, c + d, `${a - b} und ${c + d}.`, a);
+    const mk = (txt, x, y, ex, mx, rows) => task('compare', 'Kleiner, gleich oder größer?', [{ prompt: txt, answer: cmp(x, y), input: 'cmp', choices: ['<', '=', '>'], help: { kind: 'bars', rows }, explain: `${x} ${['<', '=', '>'][cmp(x, y)]} ${y}. ${ex || ''}`.trim() }], { max: mx || Math.max(x, y) });
+    if (L === 1) { const x = r.int(10, 19), y = r.chance(0.2) ? x : r.int(10, 19); return mk(`${x} ○ ${y}`, x, y, '', 0, [{ a: x }, { a: y }]); }
+    if (L === 2) { const a = r.int(5, 9), b = r.int(5, 9), y = r.chance(0.25) ? a + b : r.int(11, 18); return mk(`${a} + ${b} ○ ${y}`, a + b, y, `${a} + ${b} = ${a + b}.`, 0, [{ a, b }, { a: y }]); }
+    if (L === 3) { const a = r.int(5, 9), b = r.int(5, 9), c = r.int(5, 9), d = r.chance(0.3) ? a + b - c : r.int(5, 9); return mk(`${a} + ${b} ○ ${c} + ${d}`, a + b, c + d, `${a + b} und ${c + d}.`, 0, [{ a, b }, { a: c, b: d }]); }
+    const a = r.int(12, 19), b = r.int(2, 9), c = r.int(5, 9), d = r.int(2, 9); return mk(`${a} − ${b} ○ ${c} + ${d}`, a - b, c + d, `${a - b} und ${c + d}.`, a, [{ a, cross: b }, { a: c, b: d }]);
   };
 
   const HERO = [['Funki', 'er', 'Blüten'], ['Mia', 'sie', 'Tautropfen'], ['Igel Ino', 'er', 'Samen'], ['Eule Ella', 'sie', 'Beeren']];
@@ -173,13 +171,14 @@
       else sq = seq(r.int(17, 20), -3, 4); }
     mx = Math.max(sq.next, 10);
     const first = sq.shown.split(', ').map(Number);
-    return task('pattern', 'Welche Zahl kommt als Nächstes?', [num(`${sq.shown}, ${unk}`, sq.next, { explain: `Schau auf die Schritte: nächste Zahl ist ${sq.next}.` })], { max: Math.max(mx, ...first) });
+    const lastN = first[first.length - 1], hp = sq.next >= lastN ? dots(lastN, sq.next - lastN) : dots(lastN, 0, lastN - sq.next); // last number, then what is added (or struck out)
+    return task('pattern', 'Welche Zahl kommt als Nächstes?', [num(`${sq.shown}, ${unk}`, sq.next, { help: hp, explain: `Schau auf die Schritte: nächste Zahl ist ${sq.next}.` })], { max: Math.max(mx, ...first) });
   };
 
   GEN.tenmath = (L, r) => {
     if (L === 1) { const a = r.int(3, 9); return task('tenmath', 'Die 10 hilft!', [num(r.chance(0.5) ? `10 + ${a} = ?` : `${a} + 10 = ?`, 10 + a, { eq: [`10+${a}`, '?'], explain: `10 + ${a} = ${10 + a}.` })], { max: 10 + a }); }
     if (L === 2) { const a = r.int(12, 19), k = r.chance(0.5); return k ? task('tenmath', 'Zehner und Einer.', [num(`${a} − 10 = ?`, a - 10, { eq: [`${a}-10`, '?'], explain: `${a} − 10 = ${a - 10}.` })], { max: a }) : task('tenmath', 'Zehner und Einer.', [num(`${a} = 10 + ${unk}`, a - 10, { eq: [`10+?`, String(a)], explain: `${a} = 10 + ${a - 10}.` })], { max: a }); }
-    if (L === 3) { const e = r.int(2, 8); return task('tenmath', 'Zehner und Einer.', [num(`1 Zehner und ${e} Einer sind die Zahl ${unk}`, 10 + e, { explain: `10 + ${e} = ${10 + e}.` }), (() => { const n2 = 10 + (e + r.int(1, 7)) % 9 + 1; return num(`Die Zahl ${n2} hat 1 Zehner und ${unk} Einer`, n2 - 10, { eq: ['10+?', String(n2)], explain: `${n2} = 10 + ${n2 - 10}.` }); })()], { max: 20 }); }
+    if (L === 3) { const e = r.int(2, 8); return task('tenmath', 'Zehner und Einer.', [num(`1 Zehner und ${e} Einer sind die Zahl ${unk}`, 10 + e, { help: dots(10, e), explain: `10 + ${e} = ${10 + e}.` }), (() => { const n2 = 10 + (e + r.int(1, 7)) % 9 + 1; return num(`Die Zahl ${n2} hat 1 Zehner und ${unk} Einer`, n2 - 10, { help: dots(10, n2 - 10), eq: ['10+?', String(n2)], explain: `${n2} = 10 + ${n2 - 10}.` }); })()], { max: 20 }); }
     const e = r.int(2, 6), b = r.int(2, 9 - e), a = 10 + e; // e.g. 14 + 5: first the ones (4 + 5), then the ten
     return task('tenmath', `${a} + ${b}: erst die Einer, dann die 10 dazu.`, [num(`${e} + ${b} = ?`, e + b, { eq: [`${e}+${b}`, '?'], explain: `${e} + ${b} = ${e + b}.` }), num(`10 + ${e + b} = ?`, a + b, { eq: [`10+${e + b}`, '?'], explain: `10 + ${e + b} = ${a + b}, also ${a} + ${b} = ${a + b}.` })], { max: a + b });
   };

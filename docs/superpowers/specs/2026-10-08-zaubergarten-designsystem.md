@@ -60,7 +60,7 @@ Text steht immer in `--ink`, `--ink-2` oder `--accent-ink`, nie in einer hellen 
 | Rückmeldung | `--accent-ink`, bei Hinweis `--ink`; Platz reserviert |
 | Tabelle | Linien 1 px `--line`, Zellen 8/4 Abstand, Zahlen rechts mit gleich breiten Ziffern |
 | Zahlenstrahl | Kugel über der Linie wird waagerecht gezogen, rastet beim Loslassen auf der nächsten Linie ein und setzt sich darauf; falsche Antwort → Kugel rollt zurück |
-| Punkte-Hilfe | erste Zahl `--dot-a`, zweite `--dot-b`, Rest leer; erscheint nur über „Hilfe" |
+| Punkte-Hilfe | erste Zahl `--dot-a`, zweite `--dot-b`, Weggenommenes durchgestrichen, Rest leer; erscheint nur über „Hilfe"; Vergleiche: eine Reihe je Seite |
 
 ## 5. Symbole
 20 Linien-Symbole: close, help, keyboard, pen, check, backspace, star, house, heart, plus, minus, arrows, triangle, twice, compare, story, wave, tens, shuffle, square. Wegmarken-Themen: Herz = verliebte Zahlen, Plus, Minus, Quadrat = fehlende Zahl, Pfeile = Zahlenstrahl, Dreieck = Zahlenmauer, zwei Kreise = doppelt/halb, Winkel = vergleichen, Buch = Geschichte, Welle = Muster, Zehnerpunkte = Zehnerhilfe, Mischpfeile = Zaubermix.
