@@ -53,3 +53,4 @@
 2026-10-09 – Aufgabenfamilie: nach der farbigen Auflösung kein Autoweiter, Weiter-Knopf – Kind soll den Zusammenhang in Ruhe ansehen
 2026-10-09 – Erkennung: 5↔9/3↔9/1↔9/7↔9 als verwechselbar, Rückfrage statt falsch gewertet; abgelehnte Vermutungen werden als Schreibproben lokal gespeichert (Menü: kopieren) – 9 wurde als 5 erkannt
 2026-10-09 – Blumenmenge: bis 50 % richtig deutlich weniger (50 % = 60 von 200 Blumen, 30 % = 14, 10 % = 3), ab 50 % linear bis voll bei 100 %; Abbrechen einer Übung fragt nach (Weiter üben / Beenden) – Besitzer-Wunsch
+2026-10-09 – Akku/Wärme: Garten wird nicht berechnet oder gezeichnet, solange eine Vollbild-Karte (Übung, Tabelle, Menü) offen ist; 30 fps; Pixelverhältnis max 1,5, kein MSAA ab Dichte 2; Stiele aus dünnerem Rohr und je Garten ein Mesh, ferne Gärten werden nicht gezeichnet (Dreiecke 1,77 Mio → 0,5 Mio) – Handy wurde sehr warm
